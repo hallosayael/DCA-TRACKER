@@ -57,7 +57,6 @@ button {
   background:#16a34a;
   color:white;
 }
-
 button.secondary { background:#6b7280 }
 button.danger { background:#dc2626 }
 
@@ -76,9 +75,12 @@ th, td {
 th { background:#f1f5f9 }
 
 .summary {
-  line-height:1.8;
+  line-height:1.9;
   font-size:16px;
 }
+
+.profit { color:#16a34a; font-weight:bold }
+.loss { color:#dc2626; font-weight:bold }
 </style>
 </head>
 
@@ -110,7 +112,7 @@ th { background:#f1f5f9 }
       <thead>
         <tr>
           <th>Tanggal</th>
-          <th>Harga</th>
+          <th>Harga Beli</th>
           <th>Nominal</th>
           <th>Qty</th>
           <th>Aksi</th>
@@ -124,12 +126,18 @@ th { background:#f1f5f9 }
 <div class="box summary">
   <b>Total Modal:</b> <span id="totalModal">0</span><br>
   <b>Total Qty:</b> <span id="totalQty">0</span><br>
-  <b>Average Buy:</b> <span id="avgBuy">0</span>
+  <b>Average Buy:</b> <span id="avgBuy">0</span><br><br>
+
+  <b>Harga Live:</b> <span id="livePrice">loading...</span><br>
+  <b>Market Value:</b> <span id="marketValue">0</span><br>
+  <b>Unrealized P/L:</b> <span id="upl">0</span><br>
+  <b>P/L %:</b> <span id="uplPct">0%</span>
 </div>
 
 <script>
 let currentTab = "BTC";
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
+let livePrices = { BTC: 0, PAXG: 0 };
 
 let data = {
   BTC: JSON.parse(localStorage.getItem("dca_BTC")) || [],
@@ -187,12 +195,22 @@ function exportCSV(){
 function togglePrivacy(){
   privacy = !privacy;
   localStorage.setItem("privacy", JSON.stringify(privacy));
-  updatePrivacyBtn();
+  privacyBtn.innerText = privacy ? "🔓 Privacy ON" : "🔒 Privacy OFF";
   render();
 }
 
-function updatePrivacyBtn(){
-  privacyBtn.innerText = privacy ? "🔓 Privacy ON" : "🔒 Privacy OFF";
+async function fetchPrice(){
+  try {
+    let res = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,pax-gold&vs_currencies=usd"
+    );
+    let json = await res.json();
+    livePrices.BTC = json.bitcoin.usd;
+    livePrices.PAXG = json["pax-gold"].usd;
+    render();
+  } catch(e){
+    livePriceSpan.innerText = "error";
+  }
 }
 
 function render(){
@@ -219,10 +237,28 @@ function render(){
 
   totalModalSpan.innerText = privacy ? "****" : totalModal.toFixed(2);
   totalQtySpan.innerText = privacy ? "****" : totalQty.toFixed(8);
+  avgBuySpan.innerText = totalQty ? (totalModal / totalQty).toFixed(2) : 0;
 
-  // AVG BUY SELALU KELIHATAN
-  avgBuySpan.innerText =
-    totalQty ? (totalModal / totalQty).toFixed(2) : 0;
+  let price = livePrices[currentTab];
+  livePriceSpan.innerText = price ? `$${price.toLocaleString()}` : "loading...";
+
+  let marketValue = totalQty * price;
+  let upl = marketValue - totalModal;
+  let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
+
+  marketValueSpan.innerText = privacy ? "****" : `$${marketValue.toFixed(2)}`;
+
+  uplSpan.innerHTML = privacy
+    ? "****"
+    : `<span class="${upl >= 0 ? "profit" : "loss"}">
+        ${upl >= 0 ? "+" : ""}$${upl.toFixed(2)}
+      </span>`;
+
+  // ✅ P/L % SELALU TERLIHAT
+  uplPctSpan.innerHTML =
+    `<span class="${upl >= 0 ? "profit" : "loss"}">
+      ${uplPct.toFixed(2)}%
+    </span>`;
 }
 
 let tanggal = document.getElementById("tanggal");
@@ -232,9 +268,16 @@ let tabel = document.getElementById("tabel");
 let totalModalSpan = document.getElementById("totalModal");
 let totalQtySpan = document.getElementById("totalQty");
 let avgBuySpan = document.getElementById("avgBuy");
+let livePriceSpan = document.getElementById("livePrice");
+let marketValueSpan = document.getElementById("marketValue");
+let uplSpan = document.getElementById("upl");
+let uplPctSpan = document.getElementById("uplPct");
 let privacyBtn = document.getElementById("privacyBtn");
 
-updatePrivacyBtn();
+privacyBtn.innerText = privacy ? "🔓 Privacy ON" : "🔒 Privacy OFF";
+
+fetchPrice();
+setInterval(fetchPrice, 60000);
 render();
 </script>
 
