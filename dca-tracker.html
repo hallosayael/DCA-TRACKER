@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DCA Tracker</title>
+
+<style>
+* { box-sizing:border-box }
+body {
+  font-family: Arial, sans-serif;
+  background:#f2f4f7;
+  margin:0;
+  padding:15px;
+}
+h2 { text-align:center; margin-bottom:15px }
+
+.tabs {
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
+.tabs button {
+  flex:1;
+  padding:12px;
+  font-size:16px;
+  border:none;
+  border-radius:8px;
+  background:#ddd;
+}
+.tabs button.active {
+  background:#2563eb;
+  color:#fff;
+}
+
+.box {
+  background:#fff;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+
+.form-group {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+input, button {
+  padding:12px;
+  font-size:16px;
+}
+
+button {
+  border:none;
+  border-radius:8px;
+  background:#16a34a;
+  color:white;
+}
+
+button.secondary { background:#6b7280 }
+button.danger { background:#dc2626 }
+
+.table-wrapper { overflow-x:auto }
+table {
+  width:100%;
+  border-collapse:collapse;
+  min-width:600px;
+}
+th, td {
+  border:1px solid #ccc;
+  padding:8px;
+  text-align:center;
+  white-space:nowrap;
+}
+th { background:#f1f5f9 }
+
+.summary {
+  line-height:1.8;
+  font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>DCA Tracker</h2>
+
+<div class="tabs">
+  <button id="tabBTC" class="active" onclick="switchTab('BTC')">BTC</button>
+  <button id="tabPAXG" onclick="switchTab('PAXG')">PAXG</button>
+</div>
+
+<div class="box">
+  <div class="form-group">
+    <input type="date" id="tanggal">
+    <input type="number" id="harga" placeholder="Harga Beli">
+    <input type="number" id="nominal" placeholder="Nominal">
+    <button onclick="tambah()">Tambah Data</button>
+    <button class="secondary" onclick="exportCSV()">Export CSV</button>
+    <button class="secondary" onclick="togglePrivacy()" id="privacyBtn">
+      🔒 Privacy OFF
+    </button>
+  </div>
+</div>
+
+<div class="box">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Harga</th>
+          <th>Nominal</th>
+          <th>Qty</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabel"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="box summary">
+  <b>Total Modal:</b> <span id="totalModal">0</span><br>
+  <b>Total Qty:</b> <span id="totalQty">0</span><br>
+  <b>Average Buy:</b> <span id="avgBuy">0</span>
+</div>
+
+<script>
+let currentTab = "BTC";
+let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
+
+let data = {
+  BTC: JSON.parse(localStorage.getItem("dca_BTC")) || [],
+  PAXG: JSON.parse(localStorage.getItem("dca_PAXG")) || []
+};
+
+function switchTab(tab){
+  currentTab = tab;
+  tabBTC.classList.remove("active");
+  tabPAXG.classList.remove("active");
+  document.getElementById("tab"+tab).classList.add("active");
+  render();
+}
+
+function tambah(){
+  let tgl = tanggal.value;
+  let harga = Number(hargaInput.value);
+  let nominal = Number(nominalInput.value);
+  if(!tgl || !harga || !nominal) return alert("Lengkapi data");
+
+  let qty = nominal / harga;
+  data[currentTab].push({tgl, harga, nominal, qty});
+  simpan();
+}
+
+function hapus(i){
+  if(confirm("Hapus data ini?")){
+    data[currentTab].splice(i,1);
+    simpan();
+  }
+}
+
+function simpan(){
+  localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
+  render();
+}
+
+function exportCSV(){
+  let rows = [["Tanggal","Harga","Nominal","Qty"]];
+  data[currentTab].forEach(d=>{
+    rows.push([d.tgl, d.harga, d.nominal, d.qty]);
+  });
+
+  let csv = rows.map(r=>r.join(",")).join("\n");
+  let blob = new Blob([csv], {type:"text/csv"});
+  let url = URL.createObjectURL(blob);
+
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "DCA_"+currentTab+".csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function togglePrivacy(){
+  privacy = !privacy;
+  localStorage.setItem("privacy", JSON.stringify(privacy));
+  updatePrivacyBtn();
+  render();
+}
+
+function updatePrivacyBtn(){
+  privacyBtn.innerText = privacy ? "🔓 Privacy ON" : "🔒 Privacy OFF";
+}
+
+function render(){
+  let tbody = "";
+  let totalModal = 0;
+  let totalQty = 0;
+
+  data[currentTab].forEach((d,i)=>{
+    totalModal += d.nominal;
+    totalQty += d.qty;
+
+    tbody += `
+      <tr>
+        <td>${d.tgl}</td>
+        <td>${d.harga}</td>
+        <td>${privacy ? "****" : d.nominal.toFixed(2)}</td>
+        <td>${privacy ? "****" : d.qty.toFixed(8)}</td>
+        <td><button class="danger" onclick="hapus(${i})">X</button></td>
+      </tr>
+    `;
+  });
+
+  tabel.innerHTML = tbody;
+
+  totalModalSpan.innerText = privacy ? "****" : totalModal.toFixed(2);
+  totalQtySpan.innerText = privacy ? "****" : totalQty.toFixed(8);
+
+  // AVG BUY SELALU KELIHATAN
+  avgBuySpan.innerText =
+    totalQty ? (totalModal / totalQty).toFixed(2) : 0;
+}
+
+let tanggal = document.getElementById("tanggal");
+let hargaInput = document.getElementById("harga");
+let nominalInput = document.getElementById("nominal");
+let tabel = document.getElementById("tabel");
+let totalModalSpan = document.getElementById("totalModal");
+let totalQtySpan = document.getElementById("totalQty");
+let avgBuySpan = document.getElementById("avgBuy");
+let privacyBtn = document.getElementById("privacyBtn");
+
+updatePrivacyBtn();
+render();
+</script>
+
+</body>
+</html>
