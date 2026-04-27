@@ -1,280 +1,352 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DCA Tracker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DCA Tracker Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
 
-<style>
-* { box-sizing:border-box }
-body {
-  font-family: Arial, sans-serif;
-  background:#f2f4f7;
-  margin:0;
-  padding:15px;
-}
-h2 { text-align:center; margin-bottom:15px }
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
 
-.tabs {
-  display:flex;
-  gap:10px;
-  margin-bottom:15px;
-}
-.tabs button {
-  flex:1;
-  padding:12px;
-  font-size:16px;
-  border:none;
-  border-radius:8px;
-  background:#ddd;
-}
-.tabs button.active {
-  background:#2563eb;
-  color:#fff;
-}
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
 
-.box {
-  background:#fff;
-  padding:15px;
-  border-radius:10px;
-  margin-bottom:15px;
-}
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-.form-group {
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
+        h2 { 
+            font-weight: 700; 
+            color: var(--text-main);
+            margin: 0;
+            letter-spacing: -0.025em;
+        }
 
-input, button {
-  padding:12px;
-  font-size:16px;
-}
+        /* Tabs Styling */
+        .tabs {
+            display: flex;
+            background: #e2e8f0;
+            padding: 4px;
+            border-radius: 12px;
+            gap: 4px;
+            margin-bottom: 25px;
+        }
 
-button {
-  border:none;
-  border-radius:8px;
-  background:#16a34a;
-  color:white;
-}
-button.secondary { background:#6b7280 }
-button.danger { background:#dc2626 }
+        .tabs button {
+            flex: 1;
+            padding: 10px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
 
-.table-wrapper { overflow-x:auto }
-table {
-  width:100%;
-  border-collapse:collapse;
-  min-width:600px;
-}
-th, td {
-  border:1px solid #ccc;
-  padding:8px;
-  text-align:center;
-  white-space:nowrap;
-}
-th { background:#f1f5f9 }
+        .tabs button.active {
+            background: var(--card);
+            color: var(--primary);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
 
-.summary {
-  line-height:1.9;
-  font-size:16px;
-}
+        /* Card Layout */
+        .card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            margin-bottom: 20px;
+        }
 
-.profit { color:#16a34a; font-weight:bold }
-.loss { color:#dc2626; font-weight:bold }
-</style>
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        /* Form Elements */
+        label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--primary); ring: 2px solid var(--primary); }
+
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+        button {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; flex: 2; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        /* Summary Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item { padding: 10px; }
+        .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+        /* Table Styling */
+        .table-wrapper { overflow-x: auto; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #f8fafc; text-align: left; padding: 12px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        
+        .badge-danger { 
+            background: #fee2e2; color: #ef4444; padding: 4px 8px; border-radius: 6px; cursor: pointer; 
+        }
+
+        .profit { color: var(--success); }
+        .loss { color: var(--danger); }
+
+        @media (max-width: 600px) {
+            .grid-inputs { grid-template-columns: 1fr; }
+            .btn-primary { flex: 1 1 100%; }
+        }
+    </style>
 </head>
-
 <body>
 
-<h2>DCA Tracker</h2>
+<div class="container">
+    <header>
+        <h2>DCA Tracker Pro</h2>
+    </header>
 
-<div class="tabs">
-  <button id="tabBTC" class="active" onclick="switchTab('BTC')">BTC</button>
-  <button id="tabPAXG" onclick="switchTab('PAXG')">PAXG</button>
-</div>
+    <div class="tabs">
+        <button id="tabBTC" class="active" onclick="switchTab('BTC')">Bitcoin (BTC)</button>
+        <button id="tabPAXG" onclick="switchTab('PAXG')">Gold (PAXG)</button>
+    </div>
 
-<div class="box">
-  <div class="form-group">
-    <input type="date" id="tanggal">
-    <input type="number" id="harga" placeholder="Harga Beli">
-    <input type="number" id="nominal" placeholder="Nominal">
-    <button onclick="tambah()">Tambah Data</button>
-    <button class="secondary" onclick="exportCSV()">Export CSV</button>
-    <button class="secondary" onclick="togglePrivacy()" id="privacyBtn">
-      🔒 Privacy OFF
-    </button>
-  </div>
-</div>
+    <div class="card">
+        <div class="grid-inputs">
+            <div>
+                <label>Tanggal</label>
+                <input type="date" id="tanggal">
+            </div>
+            <div>
+                <label>Harga Beli (USD)</label>
+                <input type="number" id="harga" placeholder="0.00">
+            </div>
+            <div>
+                <label>Nominal (USD)</label>
+                <input type="number" id="nominal" placeholder="0.00">
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="tambah()">+ Tambah Transaksi</button>
+            <button class="btn-secondary" onclick="exportCSV()">Export</button>
+            <button class="btn-secondary" onclick="togglePrivacy()" id="privacyBtn">🔒 Privacy</button>
+        </div>
+    </div>
 
-<div class="box">
-  <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th>Tanggal</th>
-          <th>Harga Beli</th>
-          <th>Nominal</th>
-          <th>Qty</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="tabel"></tbody>
-    </table>
-  </div>
-</div>
+    <div class="card stats-grid">
+        <div class="stat-item">
+            <div class="stat-label">Total Investasi</div>
+            <div class="stat-value" id="totalModal">0</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Harga Saat Ini</div>
+            <div class="stat-value" id="livePrice" style="color: var(--primary)">loading...</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Market Value</div>
+            <div class="stat-value" id="marketValue">0</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Unrealized P/L</div>
+            <div class="stat-value" id="upl">0</div>
+        </div>
+    </div>
 
-<div class="box summary">
-  <b>Total Modal:</b> <span id="totalModal">0</span><br>
-  <b>Total Qty:</b> <span id="totalQty">0</span><br>
-  <b>Average Buy:</b> <span id="avgBuy">0</span><br><br>
-
-  <b>Harga Live:</b> <span id="livePrice">loading...</span><br>
-  <b>Market Value:</b> <span id="marketValue">0</span><br>
-  <b>Unrealized P/L:</b> <span id="upl">0</span><br>
-  <b>P/L %:</b> <span id="uplPct">0%</span>
+    <div class="card">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
+            <h3 style="margin:0; font-size: 16px;">Riwayat Transaksi</h3>
+            <div id="uplPct" style="font-weight: 700;">0%</div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Harga Beli</th>
+                        <th>Nominal</th>
+                        <th>Qty</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tabel"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script>
+// [Script tetap menggunakan logika yang sama dengan sedikit penyesuaian ID selector]
 let currentTab = "BTC";
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = { BTC: 0, PAXG: 0 };
 
 let data = {
-  BTC: JSON.parse(localStorage.getItem("dca_BTC")) || [],
-  PAXG: JSON.parse(localStorage.getItem("dca_PAXG")) || []
+    BTC: JSON.parse(localStorage.getItem("dca_BTC")) || [],
+    PAXG: JSON.parse(localStorage.getItem("dca_PAXG")) || []
 };
 
 function switchTab(tab){
-  currentTab = tab;
-  tabBTC.classList.remove("active");
-  tabPAXG.classList.remove("active");
-  document.getElementById("tab"+tab).classList.add("active");
-  render();
+    currentTab = tab;
+    document.getElementById("tabBTC").classList.remove("active");
+    document.getElementById("tabPAXG").classList.remove("active");
+    document.getElementById("tab"+tab).classList.add("active");
+    render();
 }
 
 function tambah(){
-  let tgl = tanggal.value;
-  let harga = Number(hargaInput.value);
-  let nominal = Number(nominalInput.value);
-  if(!tgl || !harga || !nominal) return alert("Lengkapi data");
+    let tgl = document.getElementById("tanggal").value;
+    let harga = Number(document.getElementById("harga").value);
+    let nominal = Number(document.getElementById("nominal").value);
+    if(!tgl || !harga || !nominal) return alert("Harap isi semua field");
 
-  let qty = nominal / harga;
-  data[currentTab].push({tgl, harga, nominal, qty});
-  simpan();
+    let qty = nominal / harga;
+    data[currentTab].push({tgl, harga, nominal, qty});
+    simpan();
+    // Reset input
+    document.getElementById("harga").value = "";
+    document.getElementById("nominal").value = "";
 }
 
 function hapus(i){
-  if(confirm("Hapus data ini?")){
-    data[currentTab].splice(i,1);
-    simpan();
-  }
+    if(confirm("Hapus data ini?")){
+        data[currentTab].splice(i,1);
+        simpan();
+    }
 }
 
 function simpan(){
-  localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
-  render();
+    localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
+    render();
 }
 
 function exportCSV(){
-  let rows = [["Tanggal","Harga","Nominal","Qty"]];
-  data[currentTab].forEach(d=>{
-    rows.push([d.tgl, d.harga, d.nominal, d.qty]);
-  });
-
-  let csv = rows.map(r=>r.join(",")).join("\n");
-  let blob = new Blob([csv], {type:"text/csv"});
-  let url = URL.createObjectURL(blob);
-
-  let a = document.createElement("a");
-  a.href = url;
-  a.download = "DCA_"+currentTab+".csv";
-  a.click();
-  URL.revokeObjectURL(url);
+    let rows = [["Tanggal","Harga","Nominal","Qty"]];
+    data[currentTab].forEach(d=>{
+        rows.push([d.tgl, d.harga, d.nominal, d.qty]);
+    });
+    let csv = rows.map(r=>r.join(",")).join("\n");
+    let blob = new Blob([csv], {type:"text/csv"});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = `DCA_${currentTab}.csv`;
+    a.click();
 }
 
 function togglePrivacy(){
-  privacy = !privacy;
-  localStorage.setItem("privacy", JSON.stringify(privacy));
-  privacyBtn.innerText = privacy ? "🔓 Privacy ON" : "🔒 Privacy OFF";
-  render();
+    privacy = !privacy;
+    localStorage.setItem("privacy", JSON.stringify(privacy));
+    render();
 }
 
 async function fetchPrice(){
-  try {
-    let res = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,pax-gold&vs_currencies=usd"
-    );
-    let json = await res.json();
-    livePrices.BTC = json.bitcoin.usd;
-    livePrices.PAXG = json["pax-gold"].usd;
-    render();
-  } catch(e){
-    livePriceSpan.innerText = "error";
-  }
+    try {
+        let res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,pax-gold&vs_currencies=usd");
+        let json = await res.json();
+        livePrices.BTC = json.bitcoin.usd;
+        livePrices.PAXG = json["pax-gold"].usd;
+        render();
+    } catch(e){
+        document.getElementById("livePrice").innerText = "Offline";
+    }
 }
 
 function render(){
-  let tbody = "";
-  let totalModal = 0;
-  let totalQty = 0;
+    let tbody = "";
+    let totalModal = 0;
+    let totalQty = 0;
+    
+    const privacyBtn = document.getElementById("privacyBtn");
+    privacyBtn.innerHTML = privacy ? "🔓 Show Data" : "🔒 Privacy";
 
-  data[currentTab].forEach((d,i)=>{
-    totalModal += d.nominal;
-    totalQty += d.qty;
+    data[currentTab].forEach((d,i)=>{
+        totalModal += d.nominal;
+        totalQty += d.qty;
+        tbody += `
+            <tr>
+                <td>${d.tgl}</td>
+                <td style="color:var(--text-muted)">$${d.harga.toLocaleString()}</td>
+                <td>${privacy ? "••••" : "$" + d.nominal.toLocaleString()}</td>
+                <td style="font-family: monospace">${privacy ? "••••" : d.qty.toFixed(8)}</td>
+                <td style="text-align:right"><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td>
+            </tr>
+        `;
+    });
 
-    tbody += `
-      <tr>
-        <td>${d.tgl}</td>
-        <td>${d.harga}</td>
-        <td>${privacy ? "****" : d.nominal.toFixed(2)}</td>
-        <td>${privacy ? "****" : d.qty.toFixed(8)}</td>
-        <td><button class="danger" onclick="hapus(${i})">X</button></td>
-      </tr>
-    `;
-  });
+    document.getElementById("tabel").innerHTML = tbody;
+    document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
+    
+    let price = livePrices[currentTab];
+    document.getElementById("livePrice").innerText = price ? `$${price.toLocaleString()}` : "loading...";
 
-  tabel.innerHTML = tbody;
+    let marketValue = totalQty * price;
+    let upl = marketValue - totalModal;
+    let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
 
-  totalModalSpan.innerText = privacy ? "****" : totalModal.toFixed(2);
-  totalQtySpan.innerText = privacy ? "****" : totalQty.toFixed(8);
-  avgBuySpan.innerText = totalQty ? (totalModal / totalQty).toFixed(2) : 0;
+    document.getElementById("marketValue").innerText = privacy ? "••••" : "$" + marketValue.toLocaleString(undefined, {maximumFractionDigits: 2});
 
-  let price = livePrices[currentTab];
-  livePriceSpan.innerText = price ? `$${price.toLocaleString()}` : "loading...";
+    let uplElem = document.getElementById("upl");
+    uplElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+    uplElem.innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
 
-  let marketValue = totalQty * price;
-  let upl = marketValue - totalModal;
-  let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
-
-  marketValueSpan.innerText = privacy ? "****" : `$${marketValue.toFixed(2)}`;
-
-  uplSpan.innerHTML = privacy
-    ? "****"
-    : `<span class="${upl >= 0 ? "profit" : "loss"}">
-        ${upl >= 0 ? "+" : ""}$${upl.toFixed(2)}
-      </span>`;
-
-  // ✅ P/L % SELALU TERLIHAT
-  uplPctSpan.innerHTML =
-    `<span class="${upl >= 0 ? "profit" : "loss"}">
-      ${uplPct.toFixed(2)}%
-    </span>`;
+    let uplPctElem = document.getElementById("uplPct");
+    uplPctElem.className = (upl >= 0 ? "profit" : "loss");
+    uplPctElem.innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
 }
-
-let tanggal = document.getElementById("tanggal");
-let hargaInput = document.getElementById("harga");
-let nominalInput = document.getElementById("nominal");
-let tabel = document.getElementById("tabel");
-let totalModalSpan = document.getElementById("totalModal");
-let totalQtySpan = document.getElementById("totalQty");
-let avgBuySpan = document.getElementById("avgBuy");
-let livePriceSpan = document.getElementById("livePrice");
-let marketValueSpan = document.getElementById("marketValue");
-let uplSpan = document.getElementById("upl");
-let uplPctSpan = document.getElementById("uplPct");
-let privacyBtn = document.getElementById("privacyBtn");
-
-privacyBtn.innerText = privacy ? "🔓 Privacy ON" : "🔒 Privacy OFF";
 
 fetchPrice();
 setInterval(fetchPrice, 60000);
