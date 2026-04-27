@@ -30,7 +30,6 @@
 
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 20px; position: relative; overflow: hidden; }
         
-        /* Coin Logo Styling */
         .coin-bg-icon {
             position: absolute;
             right: -20px;
@@ -122,7 +121,6 @@ let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = { BTC: 0, PAXG: 0 };
 let stats = { avg: 0, live: 0, pct: 0, isProfit: true };
 
-// URL Logo
 const logos = {
     BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
     PAXG: "https://cryptologos.cc/logos/pax-gold-paxg-logo.png"
@@ -137,10 +135,7 @@ function switchTab(tab){
     currentTab = tab;
     document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
     document.getElementById("tab"+tab).classList.add("active");
-    
-    // Update Logo di Web
     document.getElementById("coinIcon").src = logos[tab];
-    
     render();
 }
 
@@ -152,6 +147,8 @@ function tambah(){
     data[currentTab].push({tgl, harga, nominal, qty: nominal / harga});
     localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
     render();
+    document.getElementById("harga").value = '';
+    document.getElementById("nominal").value = '';
 }
 
 function hapus(i){
@@ -175,7 +172,7 @@ async function fetchPrice(){
         livePrices.BTC = json.bitcoin.usd;
         livePrices.PAXG = json["pax-gold"].usd;
         render();
-    } catch(e) { console.log(e); }
+    } catch(e) { console.log("Price fetch failed"); }
 }
 
 function render(){
@@ -208,74 +205,83 @@ function render(){
     pctElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
 }
 
+// FUNGSI SHARE DENGAN LOGO TEKS DINAMIS
 function generateShareImage() {
     const canvas = document.getElementById("shareCanvas");
     const ctx = canvas.getContext("2d");
     const color = stats.isProfit ? "#10b981" : "#ef4444";
 
-    // 1. Background
-    ctx.fillStyle = "#0f172a";
+    // 1. Reset & Background
+    ctx.fillStyle = "#0f172a"; // Navy gelap
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Draw Coin Logo in Background (Watermark style)
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = logos[currentTab];
-    img.onload = function() {
-        ctx.globalAlpha = 0.1;
-        ctx.drawImage(img, 550, 50, 200, 200);
-        ctx.globalAlpha = 1.0;
+    // 2. Menggambar "Logo Teks" di sudut kanan atas
+    if (currentTab === "BTC") {
+        // Gaya Bitcoin: Oranye, Tebal, Miring
+        ctx.fillStyle = "#F7931A"; // Warna Orange BTC
+        ctx.font = "italic bold 80px Inter, Arial";
+        ctx.textAlign = "right";
+        ctx.fillText("₿ BTC", 750, 110);
+    } else {
+        // Gaya PAXG: Kuning Emas, Tebal
+        ctx.fillStyle = "#D4AF37"; // Warna Emas PAXG
+        ctx.font = "bold 80px Inter, Arial";
+        ctx.textAlign = "right";
+        ctx.fillText("PAXG", 750, 110);
+    }
+    
+    // Reset text align ke kiri untuk konten utama
+    ctx.textAlign = "left";
 
-        // 3. Header Text
-        ctx.fillStyle = "white";
-        ctx.font = "bold 28px Inter, Arial";
-        ctx.fillText(`${currentTab} Performance`, 50, 60);
-        
-        ctx.fillStyle = "#64748b";
-        ctx.font = "16px Inter, Arial";
-        ctx.fillText("DCA Tracker Pro • Portfolio Snapshot", 50, 90);
+    // 3. Header Text (Kiri)
+    ctx.fillStyle = "white";
+    ctx.font = "bold 28px Inter, Arial";
+    ctx.fillText(`${currentTab} Performance`, 50, 60);
+    
+    ctx.fillStyle = "#64748b";
+    ctx.font = "16px Inter, Arial";
+    ctx.fillText("DCA Tracker Pro • Portfolio Snapshot", 50, 90);
 
-        // 4. Main PNL Percentage
-        ctx.fillStyle = color;
-        ctx.font = "bold 100px Inter, Arial";
-        let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
-        ctx.fillText(pctText, 50, 220);
+    // 4. Main PNL Percentage
+    ctx.fillStyle = color;
+    ctx.font = "bold 100px Inter, Arial";
+    let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
+    ctx.fillText(pctText, 50, 220);
 
-        ctx.font = "bold 20px Inter, Arial";
-        ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
+    ctx.font = "bold 20px Inter, Arial";
+    ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
 
-        // 5. Data Grid
-        ctx.strokeStyle = "#334155";
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
+    // 5. Data Grid (Garis Horizontal)
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
 
-        // 6. Sub-stats
-        const drawSubStat = (label, value, x) => {
-            ctx.fillStyle = "#94a3b8";
-            ctx.font = "14px Inter, Arial";
-            ctx.fillText(label, x, 320);
-            ctx.fillStyle = "white";
-            ctx.font = "bold 24px Inter, Arial";
-            ctx.fillText(value, x, 355);
-        };
-
-        drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
-        drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
-        drawSubStat("MARKET", currentTab === 'BTC' ? "CRYPTO" : "GOLD ASET", 550);
-
-        // 7. Footer
-        ctx.fillStyle = "#334155";
-        ctx.fillRect(0, 400, 800, 50);
+    // 6. Sub-stats
+    const drawSubStat = (label, value, x) => {
         ctx.fillStyle = "#94a3b8";
-        ctx.font = "italic 14px Inter, Arial";
-        ctx.fillText("Strategy: Martingale DCA Tracking System", 50, 430);
-
-        // 8. Download
-        const link = document.createElement('a');
-        link.download = `PNL_${currentTab}_Snapshot.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+        ctx.font = "14px Inter, Arial";
+        ctx.fillText(label, x, 320);
+        ctx.fillStyle = "white";
+        ctx.font = "bold 24px Inter, Arial";
+        ctx.fillText(value, x, 355);
     };
+
+    drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
+    drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
+    drawSubStat("MARKET", currentTab === 'BTC' ? "CRYPTO" : "GOLD ASET", 550);
+
+    // 7. Footer
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(0, 400, 800, 50);
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "italic 14px Inter, Arial";
+    ctx.fillText("Strategy: Martingale DCA Tracking System", 50, 430);
+
+    // 8. Download Langsung
+    const link = document.createElement('a');
+    link.download = `PNL_${currentTab}_Snapshot.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
 }
 
 function exportCSV(){
