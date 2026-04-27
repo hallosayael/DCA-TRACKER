@@ -339,9 +339,12 @@ function render(){
 
     document.getElementById("marketValue").innerText = privacy ? "••••" : "$" + marketValue.toLocaleString(undefined, {maximumFractionDigits: 2});
 
+    // Bagian Unrealized P/L (UPL) DIUBAH agar SELALU TERLIHAT
     let uplElem = document.getElementById("upl");
     uplElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
-    uplElem.innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
+  
+    // Menghapus kondisi privacy ? "••••" agar angka tetap muncul
+    uplElem.innerText = (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
 
     let uplPctElem = document.getElementById("uplPct");
     uplPctElem.className = (upl >= 0 ? "profit" : "loss");
