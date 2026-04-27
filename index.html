@@ -28,24 +28,37 @@
         .tabs button { flex: 1; padding: 10px; font-weight: 600; border: none; border-radius: 8px; background: transparent; cursor: pointer; color: var(--text-muted); }
         .tabs button.active { background: var(--card); color: var(--primary); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
 
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 20px; position: relative; overflow: hidden; }
         
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-        label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
-        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; }
+        /* Coin Logo Styling */
+        .coin-bg-icon {
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 150px;
+            height: 150px;
+            opacity: 0.1;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
 
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; position: relative; z-index: 1; }
+        label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: rgba(255,255,255,0.9); }
+
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; position: relative; z-index: 1; }
         button { cursor: pointer; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: var(--primary); color: white; flex: 2; }
         .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); }
         .btn-share { background: #0f172a; color: white; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; position: relative; z-index: 1; }
         .stat-item { padding: 10px; border-left: 3px solid #f1f5f9; }
         .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
         .stat-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
 
-        .table-wrapper { overflow-x: auto; }
+        .table-wrapper { overflow-x: auto; position: relative; z-index: 1; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 2px solid var(--border); }
         td { padding: 12px; border-bottom: 1px solid var(--border); }
@@ -54,7 +67,6 @@
         .profit { color: var(--success); }
         .loss { color: var(--danger); }
 
-        /* Canvas Hidden */
         #shareCanvas { display: none; }
     </style>
 </head>
@@ -69,6 +81,8 @@
     </div>
 
     <div class="card">
+        <img id="coinIcon" src="https://cryptologos.cc/logos/bitcoin-btc-logo.png" class="coin-bg-icon" alt="coin logo">
+        
         <div class="grid-inputs">
             <div><label>Tanggal</label><input type="date" id="tanggal"></div>
             <div><label>Harga Beli ($)</label><input type="number" id="harga" placeholder="0.00"></div>
@@ -108,6 +122,12 @@ let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = { BTC: 0, PAXG: 0 };
 let stats = { avg: 0, live: 0, pct: 0, isProfit: true };
 
+// URL Logo
+const logos = {
+    BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
+    PAXG: "https://cryptologos.cc/logos/pax-gold-paxg-logo.png"
+};
+
 let data = {
     BTC: JSON.parse(localStorage.getItem("dca_BTC")) || [],
     PAXG: JSON.parse(localStorage.getItem("dca_PAXG")) || []
@@ -117,6 +137,10 @@ function switchTab(tab){
     currentTab = tab;
     document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
     document.getElementById("tab"+tab).classList.add("active");
+    
+    // Update Logo di Web
+    document.getElementById("coinIcon").src = logos[tab];
+    
     render();
 }
 
@@ -171,7 +195,6 @@ function render(){
     let upl = (totalQty * price) - totalModal;
     let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
 
-    // Simpan ke variabel global untuk Share Image
     stats = { avg: avgBuy, live: price, pct: uplPct, isProfit: upl >= 0 };
 
     document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
@@ -185,72 +208,74 @@ function render(){
     pctElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
 }
 
-// FUNGSI SHARE IMAGE PROFESIONAL
 function generateShareImage() {
     const canvas = document.getElementById("shareCanvas");
     const ctx = canvas.getContext("2d");
     const color = stats.isProfit ? "#10b981" : "#ef4444";
 
     // 1. Background
-    ctx.fillStyle = "#0f172a"; // Dark Blue Navy
+    ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Aksen Gradient
-    let grad = ctx.createLinearGradient(0, 0, 800, 450);
-    grad.addColorStop(0, "#1e293b");
-    grad.addColorStop(1, "#0f172a");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 2. Draw Coin Logo in Background (Watermark style)
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = logos[currentTab];
+    img.onload = function() {
+        ctx.globalAlpha = 0.1;
+        ctx.drawImage(img, 550, 50, 200, 200);
+        ctx.globalAlpha = 1.0;
 
-    // 3. Header Text
-    ctx.fillStyle = "white";
-    ctx.font = "bold 28px Inter, Arial";
-    ctx.fillText(`${currentTab} Performance`, 50, 60);
-    
-    ctx.fillStyle = "#64748b";
-    ctx.font = "16px Inter, Arial";
-    ctx.fillText("DCA Tracker Pro • Live Analysis", 50, 90);
-
-    // 4. Main PNL Percentage
-    ctx.fillStyle = color;
-    ctx.font = "bold 100px Inter, Arial";
-    let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
-    ctx.fillText(pctText, 50, 220);
-
-    ctx.font = "bold 20px Inter, Arial";
-    ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
-
-    // 5. Data Grid (Garis Pemisah)
-    ctx.strokeStyle = "#334155";
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
-
-    // 6. Sub-stats
-    const drawSubStat = (label, value, x) => {
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "14px Inter, Arial";
-        ctx.fillText(label, x, 320);
+        // 3. Header Text
         ctx.fillStyle = "white";
-        ctx.font = "bold 24px Inter, Arial";
-        ctx.fillText(value, x, 355);
+        ctx.font = "bold 28px Inter, Arial";
+        ctx.fillText(`${currentTab} Performance`, 50, 60);
+        
+        ctx.fillStyle = "#64748b";
+        ctx.font = "16px Inter, Arial";
+        ctx.fillText("DCA Tracker Pro • Portfolio Snapshot", 50, 90);
+
+        // 4. Main PNL Percentage
+        ctx.fillStyle = color;
+        ctx.font = "bold 100px Inter, Arial";
+        let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
+        ctx.fillText(pctText, 50, 220);
+
+        ctx.font = "bold 20px Inter, Arial";
+        ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
+
+        // 5. Data Grid
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
+
+        // 6. Sub-stats
+        const drawSubStat = (label, value, x) => {
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "14px Inter, Arial";
+            ctx.fillText(label, x, 320);
+            ctx.fillStyle = "white";
+            ctx.font = "bold 24px Inter, Arial";
+            ctx.fillText(value, x, 355);
+        };
+
+        drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
+        drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
+        drawSubStat("MARKET", currentTab === 'BTC' ? "CRYPTO" : "GOLD ASET", 550);
+
+        // 7. Footer
+        ctx.fillStyle = "#334155";
+        ctx.fillRect(0, 400, 800, 50);
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "italic 14px Inter, Arial";
+        ctx.fillText("Strategy: Martingale DCA Tracking System", 50, 430);
+
+        // 8. Download
+        const link = document.createElement('a');
+        link.download = `PNL_${currentTab}_Snapshot.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
     };
-
-    drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
-    drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
-    drawSubStat("STATUS", stats.isProfit ? "BULLISH" : "BEARISH", 550);
-
-    // 7. Footer / Branding
-    ctx.fillStyle = "#334155";
-    ctx.fillRect(0, 400, 800, 50);
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "italic 14px Inter, Arial";
-    ctx.fillText("Generated by DCA Tracker Pro - Strategy: Automated Martingale", 50, 430);
-
-    // 8. Download
-    const link = document.createElement('a');
-    link.download = `PNL_${currentTab}_${new Date().getTime()}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
 }
 
 function exportCSV(){
