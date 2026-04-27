@@ -134,9 +134,9 @@
 // Konfigurasi Aset
 const assets = [
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
-    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#627EEA', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
-    { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#14F195', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
-    { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png' },
+    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
+    { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
+    { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
     { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', logo: 'https://cryptologos.cc/logos/sui-sui-logo.png' },
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://cryptologos.cc/logos/pax-gold-paxg-logo.png' }
 ];
@@ -250,17 +250,28 @@ function generateShareImage() {
     const canvas = document.getElementById("shareCanvas");
     const ctx = canvas.getContext("2d");
     const asset = assets.find(a => a.id === currentTab);
-    const color = stats.isProfit ? "#10b981" : "#ef4444";
+    const colorPNL = stats.isProfit ? "#10b981" : "#ef4444";
 
+    // 1. Background
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Dynamic Text Logo based on current asset
-    ctx.fillStyle = asset.color;
+    // 2. Menggambar Nama Koin dengan warna khusus
     ctx.font = "bold 80px Inter, Arial";
     ctx.textAlign = "right";
+    
+    // Logika Warna Teks Logo di Share Card
+    if (currentTab === "SOL") {
+        ctx.fillStyle = "#A464FA"; // Ungu Solana
+    } else if (currentTab === "ETH") {
+        ctx.fillStyle = "#9ca3af"; // Abu-abu Terang khas Ethereum
+    } else {
+        ctx.fillStyle = asset.color; // Warna default dari assets
+    }
+    
     ctx.fillText(currentTab, 750, 110);
     
+    // 3. Header & Info
     ctx.textAlign = "left";
     ctx.fillStyle = "white";
     ctx.font = "bold 28px Inter, Arial";
@@ -270,7 +281,8 @@ function generateShareImage() {
     ctx.font = "16px Inter, Arial";
     ctx.fillText("DCA Tracker Pro • Portfolio Snapshot", 50, 90);
 
-    ctx.fillStyle = color;
+    // 4. Main PNL Percentage
+    ctx.fillStyle = colorPNL;
     ctx.font = "bold 100px Inter, Arial";
     let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
     ctx.fillText(pctText, 50, 220);
@@ -278,6 +290,7 @@ function generateShareImage() {
     ctx.font = "bold 20px Inter, Arial";
     ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
 
+    // 5. Data Grid
     ctx.strokeStyle = "#334155";
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
@@ -295,12 +308,14 @@ function generateShareImage() {
     drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
     drawSubStat("ASSET", currentTab, 550);
 
+    // 6. Footer
     ctx.fillStyle = "#334155";
     ctx.fillRect(0, 400, 800, 50);
     ctx.fillStyle = "#94a3b8";
     ctx.font = "italic 14px Inter, Arial";
     ctx.fillText("Strategy: Martingale DCA Tracking System", 50, 430);
 
+    // 7. Download
     const link = document.createElement('a');
     link.download = `PNL_${currentTab}_Snapshot.png`;
     link.href = canvas.toDataURL("image/png");
