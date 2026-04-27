@@ -22,15 +22,12 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
         
-        /* Typography */
         h2 { font-weight: 700; text-align: center; margin-bottom: 25px; }
         
-        /* Tabs */
         .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; gap: 4px; margin-bottom: 25px; }
         .tabs button { flex: 1; padding: 10px; font-weight: 600; border: none; border-radius: 8px; background: transparent; cursor: pointer; color: var(--text-muted); }
         .tabs button.active { background: var(--card); color: var(--primary); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
 
-        /* Cards */
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 20px; }
         
         .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
@@ -41,14 +38,13 @@
         button { cursor: pointer; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: var(--primary); color: white; flex: 2; }
         .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-share { background: #0f172a; color: white; }
 
-        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
         .stat-item { padding: 10px; border-left: 3px solid #f1f5f9; }
         .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
         .stat-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
 
-        /* Table */
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 2px solid var(--border); }
@@ -57,6 +53,9 @@
 
         .profit { color: var(--success); }
         .loss { color: var(--danger); }
+
+        /* Canvas Hidden */
+        #shareCanvas { display: none; }
     </style>
 </head>
 <body>
@@ -77,56 +76,37 @@
         </div>
         <div class="btn-group">
             <button class="btn-primary" onclick="tambah()">+ Tambah Data</button>
+            <button class="btn-share" onclick="generateShareImage()">📸 Share PNL</button>
             <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
             <button class="btn-secondary" onclick="togglePrivacy()" id="privacyBtn">🔒 Privacy</button>
         </div>
     </div>
 
     <div class="card stats-grid">
-        <div class="stat-item">
-            <div class="stat-label">Total Modal</div>
-            <div class="stat-value" id="totalModal">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">Avg. Buy Price</div>
-            <div class="stat-value" id="avgBuy" style="color: var(--text-muted)">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">Live Price</div>
-            <div class="stat-value" id="livePrice" style="color: var(--primary)">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">Unrealized P/L ($)</div>
-            <div class="stat-value" id="upl">0</div>
-        </div>
-        <div class="stat-item" style="border-left: 3px solid var(--primary)">
-            <div class="stat-label">Profit / Loss (%)</div>
-            <div class="stat-value" id="uplPct">0%</div>
-        </div>
+        <div class="stat-item"><div class="stat-label">Total Modal</div><div class="stat-value" id="totalModal">0</div></div>
+        <div class="stat-item"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
+        <div class="stat-item"><div class="stat-label">Live Price</div><div class="stat-value" id="livePrice" style="color: var(--primary)">0</div></div>
+        <div class="stat-item"><div class="stat-label">Unrealized P/L ($)</div><div class="stat-value" id="upl">0</div></div>
+        <div class="stat-item" style="border-left: 3px solid var(--primary)"><div class="stat-label">Profit / Loss (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
 
     <div class="card">
         <div class="table-wrapper">
             <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Harga Beli</th>
-                        <th>Nominal</th>
-                        <th>Qty</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Tanggal</th><th>Harga Beli</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr></thead>
                 <tbody id="tabel"></tbody>
             </table>
         </div>
     </div>
 </div>
 
+<canvas id="shareCanvas" width="800" height="450"></canvas>
+
 <script>
 let currentTab = "BTC";
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = { BTC: 0, PAXG: 0 };
+let stats = { avg: 0, live: 0, pct: 0, isProfit: true };
 
 let data = {
     BTC: JSON.parse(localStorage.getItem("dca_BTC")) || [],
@@ -135,8 +115,7 @@ let data = {
 
 function switchTab(tab){
     currentTab = tab;
-    document.getElementById("tabBTC").classList.remove("active");
-    document.getElementById("tabPAXG").classList.remove("active");
+    document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
     document.getElementById("tab"+tab).classList.add("active");
     render();
 }
@@ -145,15 +124,14 @@ function tambah(){
     let tgl = document.getElementById("tanggal").value;
     let harga = Number(document.getElementById("harga").value);
     let nominal = Number(document.getElementById("nominal").value);
-    if(!tgl || !harga || !nominal) return alert("Isi data dengan lengkap!");
-
+    if(!tgl || !harga || !nominal) return alert("Isi data!");
     data[currentTab].push({tgl, harga, nominal, qty: nominal / harga});
     localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
     render();
 }
 
 function hapus(i){
-    if(confirm("Hapus baris ini?")){
+    if(confirm("Hapus?")){
         data[currentTab].splice(i,1);
         localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
         render();
@@ -173,63 +151,115 @@ async function fetchPrice(){
         livePrices.BTC = json.bitcoin.usd;
         livePrices.PAXG = json["pax-gold"].usd;
         render();
-    } catch(e) { console.log("Fetch error"); }
+    } catch(e) { console.log(e); }
 }
 
 function render(){
     let tbody = "";
-    let totalModal = 0;
-    let totalQty = 0;
-    
+    let totalModal = 0; let totalQty = 0;
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓 Show Info" : "🔒 Privacy";
 
     data[currentTab].forEach((d,i)=>{
-        totalModal += d.nominal;
-        totalQty += d.qty;
-        tbody += `
-            <tr>
-                <td>${d.tgl}</td>
-                <td>$${d.harga.toLocaleString()}</td>
-                <td>${privacy ? "••••" : "$" + d.nominal.toLocaleString()}</td>
-                <td>${privacy ? "••••" : d.qty.toFixed(8)}</td>
-                <td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td>
-            </tr>`;
+        totalModal += d.nominal; totalQty += d.qty;
+        tbody += `<tr><td>${d.tgl}</td><td>$${d.harga.toLocaleString()}</td><td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td><td>${privacy ? "••••" : d.qty.toFixed(8)}</td><td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td></tr>`;
     });
 
     document.getElementById("tabel").innerHTML = tbody;
     
-    // Perhitungan
     let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0;
     let price = livePrices[currentTab];
-    let marketValue = totalQty * price;
-    let upl = marketValue - totalModal;
+    let upl = (totalQty * price) - totalModal;
     let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
 
-    // Update UI Stats
+    // Simpan ke variabel global untuk Share Image
+    stats = { avg: avgBuy, live: price, pct: uplPct, isProfit: upl >= 0 };
+
     document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
     document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
     document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
+    document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
+    document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
     
-    // P/L Nominal - TERTUTUP jika privacy ON
-    let uplElem = document.getElementById("upl");
-    uplElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
-    uplElem.innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
+    let pctElem = document.getElementById("uplPct");
+    pctElem.innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
+    pctElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+}
 
-    // P/L Persentase - TETAP TERLIHAT
-    let uplPctElem = document.getElementById("uplPct");
-    uplPctElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
-    uplPctElem.innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
+// FUNGSI SHARE IMAGE PROFESIONAL
+function generateShareImage() {
+    const canvas = document.getElementById("shareCanvas");
+    const ctx = canvas.getContext("2d");
+    const color = stats.isProfit ? "#10b981" : "#ef4444";
+
+    // 1. Background
+    ctx.fillStyle = "#0f172a"; // Dark Blue Navy
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Aksen Gradient
+    let grad = ctx.createLinearGradient(0, 0, 800, 450);
+    grad.addColorStop(0, "#1e293b");
+    grad.addColorStop(1, "#0f172a");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 3. Header Text
+    ctx.fillStyle = "white";
+    ctx.font = "bold 28px Inter, Arial";
+    ctx.fillText(`${currentTab} Performance`, 50, 60);
+    
+    ctx.fillStyle = "#64748b";
+    ctx.font = "16px Inter, Arial";
+    ctx.fillText("DCA Tracker Pro • Live Analysis", 50, 90);
+
+    // 4. Main PNL Percentage
+    ctx.fillStyle = color;
+    ctx.font = "bold 100px Inter, Arial";
+    let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
+    ctx.fillText(pctText, 50, 220);
+
+    ctx.font = "bold 20px Inter, Arial";
+    ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
+
+    // 5. Data Grid (Garis Pemisah)
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
+
+    // 6. Sub-stats
+    const drawSubStat = (label, value, x) => {
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "14px Inter, Arial";
+        ctx.fillText(label, x, 320);
+        ctx.fillStyle = "white";
+        ctx.font = "bold 24px Inter, Arial";
+        ctx.fillText(value, x, 355);
+    };
+
+    drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
+    drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
+    drawSubStat("STATUS", stats.isProfit ? "BULLISH" : "BEARISH", 550);
+
+    // 7. Footer / Branding
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(0, 400, 800, 50);
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "italic 14px Inter, Arial";
+    ctx.fillText("Generated by DCA Tracker Pro - Strategy: Automated Martingale", 50, 430);
+
+    // 8. Download
+    const link = document.createElement('a');
+    link.download = `PNL_${currentTab}_${new Date().getTime()}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
 }
 
 function exportCSV(){
     let rows = [["Tanggal","Harga","Nominal","Qty"]];
     data[currentTab].forEach(d => rows.push([d.tgl, d.harga, d.nominal, d.qty]));
-    let csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-    let encodedUri = encodeURI(csvContent);
+    let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
     let link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `DCA_${currentTab}.csv`);
-    document.body.appendChild(link);
+    link.href = encodeURI(csv);
+    link.download = `DCA_${currentTab}.csv`;
     link.click();
 }
 
