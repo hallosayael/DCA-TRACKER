@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DCA Tracker Pro Multi-Asset</title>
+    <title>DCA Tracker Pro - Overall Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -24,7 +24,6 @@
         
         h2 { font-weight: 700; text-align: center; margin-bottom: 20px; font-size: 1.5rem; }
         
-        /* Menu Navigasi Baru - Scrollable jika koin banyak */
         .tabs-container {
             overflow-x: auto;
             display: flex;
@@ -32,9 +31,9 @@
             padding: 5px;
             border-radius: 14px;
             margin-bottom: 20px;
-            scrollbar-width: none; /* Hide scrollbar for Firefox */
+            scrollbar-width: none;
         }
-        .tabs-container::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari */
+        .tabs-container::-webkit-scrollbar { display: none; }
 
         .tabs-container button {
             flex: 0 0 auto;
@@ -84,6 +83,9 @@
         .profit { color: var(--success); }
         .loss { color: var(--danger); }
         #shareCanvas { display: none; }
+        
+        /* Hide Input Card on Overall */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -94,9 +96,8 @@
     <div class="tabs-container" id="menuTabs">
         </div>
 
-    <div class="card">
+    <div class="card" id="inputCard">
         <img id="coinIcon" src="" class="coin-bg-icon" alt="coin logo">
-        
         <div class="grid-inputs">
             <div><label>Tanggal</label><input type="date" id="tanggal"></div>
             <div><label>Harga Beli ($)</label><input type="number" id="harga" placeholder="0.00"></div>
@@ -111,17 +112,17 @@
     </div>
 
     <div class="card stats-grid">
-        <div class="stat-item"><div class="stat-label">Total Modal</div><div class="stat-value" id="totalModal">0</div></div>
-        <div class="stat-item"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
-        <div class="stat-item"><div class="stat-label">Live Price</div><div class="stat-value" id="livePrice" style="color: var(--primary)">0</div></div>
+        <div class="stat-item"><div class="stat-label" id="labelModal">Total Modal</div><div class="stat-value" id="totalModal">0</div></div>
+        <div class="stat-item" id="statAvg"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
+        <div class="stat-item" id="statLive"><div class="stat-label">Live Price</div><div class="stat-value" id="livePrice" style="color: var(--primary)">0</div></div>
         <div class="stat-item"><div class="stat-label">Unrealized P/L ($)</div><div class="stat-value" id="upl">0</div></div>
         <div class="stat-item" style="border-left: 3px solid var(--primary)"><div class="stat-label">Profit / Loss (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
 
     <div class="card">
         <div class="table-wrapper">
-            <table>
-                <thead><tr><th>Tanggal</th><th>Harga Beli</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr></thead>
+            <table id="mainTable">
+                <thead id="tableHead"></thead>
                 <tbody id="tabel"></tbody>
             </table>
         </div>
@@ -131,7 +132,6 @@
 <canvas id="shareCanvas" width="800" height="450"></canvas>
 
 <script>
-// Konfigurasi Aset
 const assets = [
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
     { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
@@ -141,34 +141,47 @@ const assets = [
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://cryptologos.cc/logos/pax-gold-paxg-logo.png' }
 ];
 
-let currentTab = assets[0].id;
+let currentTab = "OVERALL"; // Default ke Overall
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = {};
-let stats = { avg: 0, live: 0, pct: 0, isProfit: true };
-
-// Inisialisasi Data dari LocalStorage
 let data = {};
+
 assets.forEach(asset => {
     data[asset.id] = JSON.parse(localStorage.getItem(`dca_${asset.id}`)) || [];
     livePrices[asset.id] = 0;
 });
 
-// Render Menu Tabs
 function renderTabs() {
     const container = document.getElementById('menuTabs');
-    container.innerHTML = assets.map(asset => `
-        <button id="tab${asset.id}" class="${currentTab === asset.id ? 'active' : ''}" 
-                onclick="switchTab('${asset.id}')">
-            ${asset.id}
-        </button>
+    let html = `<button class="${currentTab === 'OVERALL' ? 'active' : ''}" onclick="switchTab('OVERALL')">OVERALL</button>`;
+    html += assets.map(asset => `
+        <button class="${currentTab === asset.id ? 'active' : ''}" onclick="switchTab('${asset.id}')">${asset.id}</button>
     `).join('');
+    container.innerHTML = html;
 }
 
 function switchTab(tabId){
     currentTab = tabId;
     renderTabs();
-    const asset = assets.find(a => a.id === tabId);
-    document.getElementById("coinIcon").src = asset.logo;
+    
+    const inputCard = document.getElementById("inputCard");
+    const statAvg = document.getElementById("statAvg");
+    const statLive = document.getElementById("statLive");
+    const labelModal = document.getElementById("labelModal");
+
+    if(tabId === "OVERALL") {
+        inputCard.classList.add("hidden");
+        statAvg.classList.add("hidden");
+        statLive.classList.add("hidden");
+        labelModal.innerText = "Portfolio Value";
+    } else {
+        inputCard.classList.remove("hidden");
+        statAvg.classList.remove("hidden");
+        statLive.classList.remove("hidden");
+        labelModal.innerText = "Total Modal";
+        const asset = assets.find(a => a.id === tabId);
+        document.getElementById("coinIcon").src = asset.logo;
+    }
     render();
 }
 
@@ -180,8 +193,6 @@ function tambah(){
     data[currentTab].push({tgl, harga, nominal, qty: nominal / harga});
     localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
     render();
-    document.getElementById("harga").value = '';
-    document.getElementById("nominal").value = '';
 }
 
 function hapus(i){
@@ -207,137 +218,133 @@ async function fetchPrices(){
             if(json[asset.geckoId]) livePrices[asset.id] = json[asset.geckoId].usd;
         });
         render();
-    } catch(e) { console.log("Price fetch failed"); }
+    } catch(e) { console.log("Fetch failed"); }
 }
 
 function render(){
-    let tbody = "";
-    let totalModal = 0; let totalQty = 0;
+    const tableHead = document.getElementById("tableHead");
+    const tbody = document.getElementById("tabel");
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-    data[currentTab].forEach((d,i)=>{
-        totalModal += d.nominal; totalQty += d.qty;
-        tbody += `<tr>
-            <td>${d.tgl}</td>
-            <td>$${d.harga.toLocaleString()}</td>
-            <td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td>
-            <td>${privacy ? "••••" : d.qty.toFixed(8)}</td>
-            <td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td>
-        </tr>`;
-    });
+    if(currentTab === "OVERALL") {
+        // --- LOGIKA OVERALL ---
+        tableHead.innerHTML = `<tr><th>Asset</th><th>Total Modal</th><th>Market Value</th><th>P/L ($)</th><th>P/L (%)</th></tr>`;
+        let totalPortfolioModal = 0;
+        let totalPortfolioValue = 0;
+        let rowsHtml = "";
 
-    document.getElementById("tabel").innerHTML = tbody;
-    
-    let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0;
-    let price = livePrices[currentTab];
-    let upl = (totalQty * price) - totalModal;
-    let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
+        assets.forEach(asset => {
+            let assetModal = 0;
+            let assetQty = 0;
+            data[asset.id].forEach(d => {
+                assetModal += d.nominal;
+                assetQty += d.qty;
+            });
 
-    stats = { avg: avgBuy, live: price, pct: uplPct, isProfit: upl >= 0 };
+            if(assetModal > 0) {
+                let liveVal = assetQty * livePrices[asset.id];
+                let assetUpl = liveVal - assetModal;
+                let assetPct = (assetUpl / assetModal) * 100;
 
-    document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
-    document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
-    document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
-    document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
-    document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
-    
-    let pctElem = document.getElementById("uplPct");
-    pctElem.innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
-    pctElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+                totalPortfolioModal += assetModal;
+                totalPortfolioValue += liveVal;
+
+                rowsHtml += `<tr>
+                    <td><b>${asset.id}</b></td>
+                    <td>${privacy ? "••••" : "$" + assetModal.toLocaleString()}</td>
+                    <td>${privacy ? "••••" : "$" + liveVal.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+                    <td class="${assetUpl >= 0 ? 'profit' : 'loss'}">${privacy ? "••••" : (assetUpl >= 0 ? '+':'' ) + "$" + assetUpl.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+                    <td class="${assetUpl >= 0 ? 'profit' : 'loss'}">${assetPct.toFixed(2)}%</td>
+                </tr>`;
+            }
+        });
+
+        tbody.innerHTML = rowsHtml || `<tr><td colspan="5" style="text-align:center">Belum ada data di semua aset.</td></tr>`;
+        
+        // Update Stats Overall
+        let netUpl = totalPortfolioValue - totalPortfolioModal;
+        let netPct = totalPortfolioModal ? (netUpl / totalPortfolioModal) * 100 : 0;
+
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalPortfolioValue.toLocaleString(undefined,{maximumFractionDigits:2});
+        document.getElementById("upl").innerText = privacy ? "••••" : (netUpl >= 0 ? '+':'' ) + "$" + netUpl.toLocaleString(undefined,{maximumFractionDigits:2});
+        document.getElementById("upl").className = `stat-value ${netUpl >= 0 ? 'profit' : 'loss'}`;
+        document.getElementById("uplPct").innerText = (netUpl >= 0 ? "▲ " : "▼ ") + netPct.toFixed(2) + "%";
+        document.getElementById("uplPct").className = `stat-value ${netUpl >= 0 ? 'profit' : 'loss'}`;
+
+    } else {
+        // --- LOGIKA ASSET SATUAN ---
+        tableHead.innerHTML = `<tr><th>Tanggal</th><th>Harga Beli</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr>`;
+        let totalModal = 0; let totalQty = 0;
+        let rowsHtml = "";
+
+        data[currentTab].forEach((d,i)=>{
+            totalModal += d.nominal; totalQty += d.qty;
+            rowsHtml += `<tr>
+                <td>${d.tgl}</td>
+                <td>$${d.harga.toLocaleString()}</td>
+                <td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td>
+                <td>${privacy ? "••••" : d.qty.toFixed(8)}</td>
+                <td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td>
+            </tr>`;
+        });
+        tbody.innerHTML = rowsHtml;
+
+        let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0;
+        let price = livePrices[currentTab];
+        let upl = (totalQty * price) - totalModal;
+        let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
+
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
+        document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
+        document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
+        document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
+        document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+        document.getElementById("uplPct").innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
+        document.getElementById("uplPct").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+    }
 }
 
+// Fungsi generateShareImage tetap sama, namun tambahkan proteksi jika di tab Overall
 function generateShareImage() {
+    if(currentTab === "OVERALL") return alert("Gunakan tab koin spesifik untuk share PNL.");
+    // ... (rest of share logic from previous code)
     const canvas = document.getElementById("shareCanvas");
     const ctx = canvas.getContext("2d");
     const asset = assets.find(a => a.id === currentTab);
-    const colorPNL = stats.isProfit ? "#10b981" : "#ef4444";
+    const assetModal = data[currentTab].reduce((a, b) => a + b.nominal, 0);
+    const assetQty = data[currentTab].reduce((a, b) => a + b.qty, 0);
+    const price = livePrices[currentTab];
+    const upl = (assetQty * price) - assetModal;
+    const uplPct = assetModal ? (upl / assetModal) * 100 : 0;
+    const isProfit = upl >= 0;
+    const colorPNL = isProfit ? "#10b981" : "#ef4444";
 
-    // 1. Reset & Background
-    ctx.fillStyle = "#0f172a"; // Navy gelap
+    ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 2. Menggambar "Logo Teks / Simbol" di sudut kanan atas
     ctx.textAlign = "right";
-
-    if (currentTab === "BTC") {
-        // --- KHUSUS BITCOIN: Tampilkan Simbol ₿ ---
-        ctx.fillStyle = "#F7931A"; // Warna Orange BTC asli
-        ctx.font = "bold 80px Inter, Arial";
-        // Menggambar simbol dan teks
-        ctx.fillText("₿ BTC", 750, 110);
-    } else if (currentTab === "SOL") {
-        // Gaya SOL: Ungu
-        ctx.fillStyle = "#A464FA"; 
-        ctx.font = "bold 80px Inter, Arial";
-        ctx.fillText("SOL", 750, 110);
-    } else if (currentTab === "ETH") {
-        // Gaya ETH: Hitam Abu-abu
-        ctx.fillStyle = "#9ca3af"; 
-        ctx.font = "bold 80px Inter, Arial";
-        ctx.fillText("ETH", 750, 110);
-    } else {
-        // Gaya Koin Lain: Warna default dari konfigurasi assets
-        ctx.fillStyle = asset.color;
-        ctx.font = "bold 80px Inter, Arial";
-        ctx.fillText(currentTab, 750, 110);
-    }
+    if (currentTab === "BTC") { ctx.fillStyle = "#F7931A"; ctx.font = "bold 80px Inter"; ctx.fillText("₿ BTC", 750, 110); }
+    else if (currentTab === "SOL") { ctx.fillStyle = "#A464FA"; ctx.font = "bold 80px Inter"; ctx.fillText("SOL", 750, 110); }
+    else if (currentTab === "ETH") { ctx.fillStyle = "#9ca3af"; ctx.font = "bold 80px Inter"; ctx.fillText("ETH", 750, 110); }
+    else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 750, 110); }
     
-    // Reset text align ke kiri untuk konten utama
     ctx.textAlign = "left";
-
-    // 3. Header Text (Kiri)
-    ctx.fillStyle = "white";
-    ctx.font = "bold 28px Inter, Arial";
-    ctx.fillText(`${asset.name} Performance`, 50, 60);
+    ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 60);
+    ctx.fillStyle = "#64748b"; ctx.font = "16px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 90);
+    ctx.fillStyle = colorPNL; ctx.font = "bold 100px Inter"; ctx.fillText((isProfit ? "+" : "") + uplPct.toFixed(2) + "%", 50, 220);
+    ctx.font = "bold 20px Inter"; ctx.fillText(isProfit ? "PROFIT" : "LOSS", 55, 250);
+    ctx.strokeStyle = "#334155"; ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
     
-    ctx.fillStyle = "#64748b";
-    ctx.font = "16px Inter, Arial";
-    ctx.fillText("DCA Tracker Pro • Portfolio Snapshot", 50, 90);
-
-    // 4. Main PNL Percentage
-    ctx.fillStyle = colorPNL;
-    ctx.font = "bold 100px Inter, Arial";
-    let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
-    ctx.fillText(pctText, 50, 220);
-
-    ctx.font = "bold 20px Inter, Arial";
-    ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
-
-    // 5. Data Grid (Garis Horizontal)
-    ctx.strokeStyle = "#334155";
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
-
-    // 6. Sub-stats
-    const drawSubStat = (label, value, x) => {
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "14px Inter, Arial";
-        ctx.fillText(label, x, 320);
-        ctx.fillStyle = "white";
-        ctx.font = "bold 24px Inter, Arial";
-        ctx.fillText(value, x, 355);
-    };
-
-    drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
-    drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
-    // Dinamis menampilkan tipe market (Crypto/Gold)
-    drawSubStat("MARKET", currentTab === 'PAXG' ? "GOLD ASET" : "CRYPTO", 550);
-
-    // 7. Footer
-    ctx.fillStyle = "#334155";
-    ctx.fillRect(0, 400, 800, 50);
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "italic 14px Inter, Arial";
-    ctx.fillText("Generated by DCA Tracker Pro - Strategy: Martingale DCA Tracking System", 50, 430);
-
-    // 8. Download Langsung
-    const link = document.createElement('a');
-    link.download = `PNL_${currentTab}_Snapshot.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    const drawSub = (l, v, x) => { ctx.fillStyle = "#94a3b8"; ctx.font = "14px Inter"; ctx.fillText(l, x, 320); ctx.fillStyle = "white"; ctx.font = "bold 24px Inter"; ctx.fillText(v, x, 355); };
+    drawSub("AVG BUY", "$" + (assetQty ? (assetModal/assetQty).toLocaleString(undefined,{maximumFractionDigits:2}) : 0), 50);
+    drawSub("LAST PRICE", "$" + price.toLocaleString(), 300);
+    drawSub("ASSET", currentTab, 550);
+    ctx.fillStyle = "#334155"; ctx.fillRect(0, 400, 800, 50);
+    ctx.fillStyle = "#94a3b8"; ctx.font = "italic 14px Inter"; ctx.fillText("Strategy: Martingale DCA Tracking System", 50, 430);
+    const a = document.createElement('a'); a.download = `PNL_${currentTab}.png`; a.href = canvas.toDataURL("image/png"); a.click();
 }
 
 function exportCSV(){
+    if(currentTab === "OVERALL") return alert("Pilih aset spesifik untuk export.");
     let rows = [["Tanggal","Harga","Nominal","Qty"]];
     data[currentTab].forEach(d => rows.push([d.tgl, d.harga, d.nominal, d.qty]));
     let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
@@ -347,12 +354,9 @@ function exportCSV(){
     link.click();
 }
 
-// Initial Run
-renderTabs();
-switchTab(currentTab);
 fetchPrices();
 setInterval(fetchPrices, 60000);
+switchTab("OVERALL");
 </script>
-
 </body>
 </html>
