@@ -4,59 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DCA Tracker Pro - Cloud Sync</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         :root {
-            --primary: #2563eb; --success: #10b981; --danger: #ef4444;
-            --bg: #f8fafc; --card: #ffffff; --text-main: #1e293b;
-            --text-muted: #64748b; --border: #e2e8f0;
+            --primary: #2563eb; 
+            --success: #10b981; 
+            --danger: #ef4444;
+            --bg: #f8fafc; 
+            --card: #ffffff; 
+            --text-main: #1e293b;
+            --text-muted: #64748b; 
+            --border: #e2e8f0;
         }
 
-        * { box-sizing: border-box; transition: all 0.2s ease; }
+        * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 15px; }
         .container { max-width: 1000px; margin: 0 auto; }
         
-        /* Auth UI */
-        .auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .login-card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-        .btn-google { background: #fff; border: 1px solid var(--border); color: #444; width: 100%; padding: 12px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
-        .btn-google:hover { background: #f9fafb; }
-        
-        .user-profile { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 10px; background: white; border-radius: 12px; border: 1px solid var(--border); }
-        .logout-link { color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 600; }
+        /* --- PROFESSIONAL AUTH UI --- */
+        .auth-overlay { 
+            position: fixed; inset: 0; 
+            background: radial-gradient(circle at top right, #e2e8f0, #f8fafc); 
+            display: flex; align-items: center; justify-content: center; z-index: 2000; 
+        }
+        .login-card { 
+            background: white; padding: 50px 40px; border-radius: 32px; 
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); 
+            text-align: center; max-width: 440px; width: 90%; 
+            border: 1px solid rgba(255, 255, 255, 0.7);
+        }
+        .login-logo {
+            font-size: 56px; margin-bottom: 24px; display: inline-block;
+            filter: drop-shadow(0 10px 8px rgba(0,0,0,0.1));
+        }
+        .login-card h3 { 
+            font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; 
+            letter-spacing: -0.025em;
+        }
+        .login-card p { 
+            color: var(--text-muted); font-size: 15px; line-height: 1.6; margin-bottom: 35px; 
+        }
+        .btn-google { 
+            background: #ffffff; border: 1px solid #dadce0; color: #3c4043; 
+            width: 100%; padding: 14px; border-radius: 14px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 12px; 
+            cursor: pointer; font-size: 16px;
+        }
+        .btn-google:hover { 
+            background: #f7f8f9; transform: translateY(-2px); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #d2d4d7;
+        }
+        .auth-footer { margin-top: 30px; font-size: 12px; color: #94a3b8; font-weight: 500; }
 
-        h2 { font-weight: 700; text-align: center; margin-bottom: 20px; }
-        .tabs-container { overflow-x: auto; display: flex; background: #e2e8f0; padding: 5px; border-radius: 14px; margin-bottom: 20px; scrollbar-width: none; }
-        .tabs-container button { flex: 0 0 auto; padding: 10px 20px; font-weight: 600; border: none; border-radius: 10px; background: transparent; cursor: pointer; color: var(--text-muted); white-space: nowrap; border: 2px solid transparent; }
-        .tabs-container button.active { background: var(--card); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        
-        /* Dinamis Tab Colors */
-        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
-        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
-        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom-color: var(--primary); }
+        /* --- APP UI --- */
+        .user-profile { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 12px 18px; background: white; border-radius: 16px; border: 1px solid var(--border); }
+        .logout-link { color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 700; text-transform: uppercase; }
 
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
-        .coin-bg-icon { position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 150px; opacity: 0.1; filter: grayscale(100%); pointer-events: none; }
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; z-index: 1; position: relative; }
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: rgba(255,255,255,0.9); }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; z-index: 1; position: relative; }
-        button { cursor: pointer; font-weight: 600; border-radius: 8px; border: none; font-size: 14px; }
-        .btn-primary { background: var(--primary); color: white; flex: 1 1 200px; padding: 12px; }
+        h2 { font-weight: 800; text-align: center; margin-bottom: 25px; font-size: 1.75rem; letter-spacing: -0.025em; }
+        .tabs-container { overflow-x: auto; display: flex; background: #e2e8f0; padding: 6px; border-radius: 16px; margin-bottom: 20px; scrollbar-width: none; }
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); white-space: nowrap; }
+        .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-        .stat-item { padding: 10px; border-left: 3px solid #f1f5f9; }
-        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-        .stat-value { font-size: 16px; font-weight: 700; margin-top: 4px; }
+        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; }
+        .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; }
+        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; }
+        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); }
+
+        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
+        .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
+        label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
+        input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; position: relative; z-index: 1; }
+        .btn-primary { background: var(--primary); color: white; flex: 1 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; font-size: 15px; }
         
-        .live-indicator { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+        .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; }
+        .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
+        
+        .live-indicator { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; margin-left: 5px; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
         .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { text-align: left; padding: 16px; border-bottom: 1px solid var(--border); }
+        th { font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
         .profit { color: var(--success); } .loss { color: var(--danger); }
         .hidden { display: none !important; }
     </style>
@@ -65,18 +103,29 @@
 
 <div id="authScreen" class="auth-overlay hidden">
     <div class="login-card">
-        <h3 style="margin-top:0">DCA Tracker Pro</h3>
-        <p style="color:var(--text-muted); font-size:14px; margin-bottom:30px">Simpan data transaksi Anda secara permanen di cloud.</p>
+        <div class="login-logo">🚀</div>
+        <h3>DCA Tracker Pro</h3>
+        <p>Solusi cerdas kelola akumulasi aset kripto Anda. Pantau performa DCA secara real-time di cloud.</p>
+        
         <button class="btn-google" onclick="login()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/layout/google.svg" width="18">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
+                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+            </svg>
             Masuk dengan Google
         </button>
+
+        <div class="auth-footer">
+            🔒 Protected by Supabase Identity
+        </div>
     </div>
 </div>
 
 <div id="appScreen" class="container hidden">
     <div class="user-profile">
-        <div style="font-size:13px">Logged as: <b id="userEmail">...</b></div>
+        <div style="font-size:13px; font-weight:500;">User: <span id="userEmail" style="color:var(--primary); font-weight:700;">...</span></div>
         <div class="logout-link" onclick="logout()">Logout</div>
     </div>
 
@@ -84,7 +133,7 @@
     <div class="tabs-container" id="menuTabs"></div>
 
     <div class="card" id="inputCard">
-        <img id="coinIcon" src="" class="coin-bg-icon">
+        <img id="coinIcon" src="" class="coin-bg-icon" alt="">
         <div class="grid-inputs">
             <div><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL (TP)</option></select></div>
             <div><label>Tanggal</label><input type="date" id="tanggal"></div>
@@ -93,15 +142,15 @@
         </div>
         <div class="btn-group">
             <button class="btn-primary" onclick="tambah()">Simpan ke Cloud</button>
-            <button style="padding:12px; background:#f1f5f9" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
+            <button style="padding:14px; background:#f1f5f9; border-radius:12px; border:none; cursor:pointer" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
         </div>
     </div>
 
     <div class="card stats-grid">
-        <div class="stat-item"><div class="stat-label" id="labelModal">Investasi</div><div class="stat-value" id="totalModal">0</div></div>
+        <div class="stat-item"><div class="stat-label">Investasi Bersih</div><div class="stat-value" id="totalModal">0</div></div>
         <div class="stat-item"><div class="stat-label">Live Price <span class="live-indicator"></span></div><div class="stat-value" id="livePrice" style="color:var(--primary)">0</div></div>
-        <div class="stat-item"><div class="stat-label">P/L ($)</div><div class="stat-value" id="upl">0</div></div>
-        <div class="stat-item" style="border-left:3px solid var(--primary)"><div class="stat-label">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
+        <div class="stat-item"><div class="stat-label">Floating P/L ($)</div><div class="stat-value" id="upl">0</div></div>
+        <div class="stat-item" style="border-left:4px solid var(--primary)"><div class="stat-label">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
 
     <div class="card" id="chartCard" style="height: 300px;">
@@ -115,11 +164,15 @@
                 <tbody id="tabel"></tbody>
             </table>
         </div>
-        <div id="emptyState" style="text-align:center; padding:40px" class="hidden">📊 Belum ada data.</div>
+        <div id="emptyState" style="text-align:center; padding:50px; color:var(--text-muted)" class="hidden">
+            <div style="font-size:40px; margin-bottom:10px;">📊</div>
+            Belum ada transaksi di cloud.
+        </div>
     </div>
 </div>
 
 <script>
+// --- KONFIGURASI SUPABASE ---
 const SUPABASE_URL = 'https://iuqzuuyihrnangontxft.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-26nDiKXaT6IkPJiTplAdQ_CV5H-MHm';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -147,6 +200,9 @@ async function checkUser() {
         document.getElementById('userEmail').innerText = user.email;
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('appScreen').classList.remove('hidden');
+        
+        renderTabs();
+        switchTab("SUMMARY");
         loadData();
     } else {
         document.getElementById('authScreen').classList.remove('hidden');
@@ -155,7 +211,10 @@ async function checkUser() {
 }
 
 async function login() {
-    await _supabase.auth.signInWithOAuth({ provider: 'google' });
+    await _supabase.auth.signInWithOAuth({ 
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+    });
 }
 
 async function logout() {
@@ -166,8 +225,10 @@ async function logout() {
 // --- DATA LOGIC ---
 async function loadData() {
     if (!currentUser) return;
-    const { data: dbData } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
+    const { data: dbData, error } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
     
+    if (error) return console.error(error);
+
     assets.forEach(a => { data[a.id] = []; livePrices[a.id] = 0; });
     dbData?.forEach(item => {
         if (data[item.asset_id]) data[item.asset_id].push(item);
@@ -195,7 +256,7 @@ async function tambah() {
 }
 
 async function hapus(id) {
-    if(!confirm("Hapus data?")) return;
+    if(!confirm("Hapus data transaksi ini secara permanen?")) return;
     await _supabase.from('transaksi').delete().eq('id', id);
     loadData();
 }
@@ -203,6 +264,8 @@ async function hapus(id) {
 // --- UI LOGIC ---
 function renderTabs() {
     const container = document.getElementById('menuTabs');
+    if (!container) return;
+
     let html = `<button class="${currentTab === 'SUMMARY' ? 'active' : ''}" data-coin="SUMMARY" onclick="switchTab('SUMMARY')">SUMMARY</button>`;
     html += assets.map(a => `<button class="${currentTab === a.id ? 'active' : ''}" data-coin="${a.id}" onclick="switchTab('${a.id}')">${a.id}</button>`).join('');
     container.innerHTML = html;
@@ -211,9 +274,16 @@ function renderTabs() {
 function switchTab(id) {
     currentTab = id;
     renderTabs();
-    document.getElementById("inputCard").className = id === "SUMMARY" ? "card hidden" : "card";
-    document.getElementById("chartCard").className = id === "SUMMARY" ? "card hidden" : "card";
-    if (id !== "SUMMARY") {
+    
+    const inputCard = document.getElementById("inputCard");
+    const chartCard = document.getElementById("chartCard");
+    
+    if (id === "SUMMARY") {
+        inputCard.classList.add("hidden");
+        chartCard.classList.add("hidden");
+    } else {
+        inputCard.classList.remove("hidden");
+        chartCard.classList.remove("hidden");
         document.getElementById("coinIcon").src = assets.find(a => a.id === id).logo;
         setTimeout(initChart, 100);
     }
@@ -223,60 +293,107 @@ function switchTab(id) {
 function render() {
     const tbody = document.getElementById("tabel");
     const tableHead = document.getElementById("tableHead");
+    const tableContainer = document.getElementById("tableContainer");
+    const emptyState = document.getElementById("emptyState");
     
+    document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
+
     if (currentTab === "SUMMARY") {
-        tableHead.innerHTML = `<tr><th>Asset</th><th>Modal</th><th>Value</th><th>P/L</th></tr>`;
-        let totalVal = 0, rows = "";
+        tableHead.innerHTML = `<tr><th>Asset</th><th>Modal Net</th><th>Market Val</th><th>Floating P/L</th></tr>`;
+        let totalVal = 0, rows = "", hasAnyData = false;
+        
         assets.forEach(a => {
             let m = 0, q = 0;
-            data[a.id]?.forEach(d => { m += d.tipe === "BUY" ? d.nominal : -d.nominal; q += d.qty; });
-            if (q > 0) {
-                let v = q * (livePrices[a.id] || 0), p = v - m;
+            data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+            if (q > 0.00000001) {
+                hasAnyData = true;
+                let lp = livePrices[a.id] || 0, v = q * lp, p = v - m;
                 totalVal += v;
-                rows += `<tr><td><b>${a.id}</b></td><td>$${fmt(m)}</td><td>$${fmt(v)}</td><td class="${p>=0?'profit':'loss'}">$${fmt(p)}</td></tr>`;
+                rows += `<tr><td><b>${a.id}</b></td><td>${privacy ? "••" : "$"+fmt(m)}</td><td>${privacy ? "••" : "$"+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy ? "••" : (p>=0?'+':'')+"$"+fmt(p)}</td></tr>`;
             }
         });
+        
         tbody.innerHTML = rows;
-        document.getElementById("totalModal").innerText = "$" + fmt(totalVal);
+        tableContainer.className = hasAnyData ? "table-wrapper" : "hidden";
+        emptyState.className = hasAnyData ? "hidden" : "";
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalVal);
     } else {
-        tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
+        tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr>`;
         let m = 0, q = 0, rows = "";
-        data[currentTab]?.forEach(d => {
-            m += d.tipe === "BUY" ? d.nominal : -d.nominal; q += d.qty;
-            rows += `<tr><td style="color:${d.tipe==='BUY'?'green':'red'}">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>$${fmt(d.nominal)}</td><td>${d.qty.toFixed(6)}</td><td onclick="hapus(${d.id})" style="color:red;cursor:pointer">X</td></tr>`;
+        
+        const currentData = data[currentTab] || [];
+        currentData.forEach(d => {
+            m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
+            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'}; font-weight:800">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy ? "••" : "$"+fmt(d.nominal)}</td><td>${privacy ? "••" : d.qty.toFixed(6)}</td><td onclick="hapus(${d.id})" style="color:var(--danger);cursor:pointer;font-weight:800">HAPUS</td></tr>`;
         });
+        
         tbody.innerHTML = rows;
+        tableContainer.className = currentData.length ? "table-wrapper" : "hidden";
+        emptyState.className = currentData.length ? "hidden" : "";
+        
         let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m;
-        document.getElementById("totalModal").innerText = "$" + fmt(m);
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(m);
         document.getElementById("livePrice").innerText = "$" + fmt(lp);
-        document.getElementById("upl").innerText = "$" + fmt(p);
+        document.getElementById("upl").innerText = privacy ? "••••" : (p>=0?'+':'') + "$" + fmt(p);
+        document.getElementById("upl").className = "stat-value " + (p>=0?"profit":"loss");
         document.getElementById("uplPct").innerText = (m > 0 ? (p/m*100).toFixed(2) : "0") + "%";
+        document.getElementById("uplPct").className = "stat-value " + (p>=0?"profit":"loss");
     }
 }
 
 function initChart() {
     const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
+    
     let labels = [], points = [], running = 0;
-    data[currentTab]?.forEach(d => { labels.push(d.tanggal); running += (d.tipe === "BUY" ? d.nominal : -d.nominal); points.push(running); });
-    chartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Investasi', data: points, borderColor: assets.find(a=>a.id===currentTab).color, fill: true, backgroundColor: 'rgba(0,0,0,0.05)', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false } });
+    data[currentTab]?.forEach(d => { 
+        labels.push(d.tanggal); 
+        running += (d.tipe === 'BUY' ? d.nominal : -d.nominal); 
+        points.push(running); 
+    });
+    
+    if (labels.length === 0) return;
+
+    chartInstance = new Chart(ctx, { 
+        type: 'line', 
+        data: { 
+            labels, 
+            datasets: [{ 
+                label: 'Investasi Bersih', 
+                data: points, 
+                borderColor: assets.find(a=>a.id===currentTab).color, 
+                fill: true, 
+                backgroundColor: 'rgba(0,0,0,0.03)', 
+                tension: 0.4,
+                pointRadius: 2
+            }] 
+        }, 
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } 
+    });
 }
 
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 function togglePrivacy() { privacy = !privacy; render(); }
 
 async function fetchPrices() {
-    const ids = assets.map(a => a.geckoId).join(',');
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-    const json = await res.json();
-    assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
-    render();
+    const indicators = document.querySelectorAll('.live-indicator');
+    try {
+        const ids = assets.map(a => a.geckoId).join(',');
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+        const json = await res.json();
+        assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
+        indicators.forEach(el => el.classList.remove('offline'));
+        render();
+    } catch(e) {
+        indicators.forEach(el => el.classList.add('offline'));
+    }
 }
 
-// Boot
+// Boot Sequence
 (async () => {
-    await checkUser();
     await fetchPrices();
+    await checkUser();
     setInterval(fetchPrices, 60000);
 })();
 </script>
