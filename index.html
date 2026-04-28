@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DCA Tracker Pro - Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root {
@@ -25,35 +26,15 @@
         h2 { font-weight: 700; text-align: center; margin-bottom: 20px; font-size: 1.5rem; }
         
         .tabs-container {
-            overflow-x: auto;
-            display: flex;
-            background: #e2e8f0;
-            padding: 5px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            scrollbar-width: none;
+            overflow-x: auto; display: flex; background: #e2e8f0; padding: 5px; border-radius: 14px; margin-bottom: 20px; scrollbar-width: none;
         }
         .tabs-container::-webkit-scrollbar { display: none; }
 
         .tabs-container button {
-            flex: 0 0 auto;
-            padding: 10px 20px;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            background: transparent;
-            cursor: pointer;
-            color: var(--text-muted);
-            white-space: nowrap;
-            border: 2px solid transparent;
+            flex: 0 0 auto; padding: 10px 20px; font-weight: 600; border: none; border-radius: 10px; background: transparent; cursor: pointer; color: var(--text-muted); white-space: nowrap; border: 2px solid transparent;
         }
 
-        .tabs-container button.active {
-            background: var(--card);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-
-        /* Warna spesifik untuk tiap koin saat aktif */
+        .tabs-container button.active { background: var(--card); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom: 2px solid #F7931A; }
         .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom: 2px solid #3c3c3d; }
         .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom: 2px solid #A464FA; }
@@ -62,16 +43,12 @@
         .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
         .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 15px; position: relative; overflow: hidden; min-height: 100px; }
-        
-        .coin-bg-icon {
-            position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
-            width: 150px; height: 150px; opacity: 0.1; pointer-events: none; filter: grayscale(100%);
-        }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
+        .coin-bg-icon { position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 150px; height: 150px; opacity: 0.1; pointer-events: none; filter: grayscale(100%); }
 
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; position: relative; z-index: 1; }
-        label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
-        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: rgba(255,255,255,0.9); }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; position: relative; z-index: 1; }
+        label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
 
         .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; position: relative; z-index: 1; }
         button { cursor: pointer; font-weight: 600; padding: 12px 18px; border-radius: 8px; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
@@ -84,8 +61,9 @@
         .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px; }
         .stat-value { font-size: 16px; font-weight: 700; margin-top: 4px; }
 
-        .live-indicator { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 0 rgba(16, 185, 129, 0.4); animation: pulse 2s infinite; }
-        .live-indicator.offline { background-color: var(--danger); animation: none; box-shadow: none; }
+        .chart-container { height: 250px; width: 100%; margin-top: 10px; }
+
+        .live-indicator { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
         .table-wrapper { overflow-x: auto; position: relative; z-index: 1; }
@@ -96,36 +74,26 @@
 
         .profit { color: var(--success); }
         .loss { color: var(--danger); }
-        #shareCanvas { display: none; }
-        .hidden { display: none !important; }
-
-        /* Empty State Styling */
-        .empty-state { text-align: center; padding: 40px 20px; }
-        .empty-state-icon { font-size: 40px; margin-bottom: 15px; opacity: 0.5; display: block; }
-        .empty-state-text { color: var(--text-muted); font-weight: 500; font-size: 14px; }
-
-        /* Custom Modal Styling */
+        .type-sell { color: var(--danger); font-weight: bold; }
+        .type-buy { color: var(--success); font-weight: bold; }
+        
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-card { background: white; padding: 24px; border-radius: 20px; max-width: 400px; width: 90%; transform: translateY(20px); transition: 0.3s; text-align: center; }
-        .modal-overlay.active .modal-card { transform: translateY(0); }
-        .modal-title { font-weight: 700; font-size: 18px; margin-bottom: 10px; }
-        .modal-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
-        .modal-btns { display: flex; gap: 10px; }
-        .modal-btns button { flex: 1; padding: 12px; }
+        .modal-card { background: white; padding: 24px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; }
         .btn-confirm { background: var(--danger); color: white; }
-        .btn-cancel { background: #f1f5f9; color: var(--text-main); }
+        .hidden { display: none !important; }
+        #shareCanvas { display: none; }
     </style>
 </head>
 <body>
 
 <div class="modal-overlay" id="confirmModal">
     <div class="modal-card">
-        <div class="modal-title">Konfirmasi Hapus</div>
-        <div class="modal-desc" id="modalDesc">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.</div>
-        <div class="modal-btns">
-            <button class="btn-cancel" onclick="closeModal()">Batal</button>
-            <button class="btn-confirm" id="modalConfirmBtn">Hapus</button>
+        <div style="font-weight:700; margin-bottom:10px">Konfirmasi Hapus</div>
+        <div id="modalDesc" style="color:var(--text-muted); font-size:14px; margin-bottom:20px"></div>
+        <div style="display:flex; gap:10px">
+            <button style="flex:1; background:#f1f5f9" onclick="closeModal()">Batal</button>
+            <button style="flex:1" class="btn-confirm" id="modalConfirmBtn">Hapus</button>
         </div>
     </div>
 </div>
@@ -136,32 +104,33 @@
     <div class="tabs-container" id="menuTabs"></div>
 
     <div class="card" id="inputCard">
-        <img id="coinIcon" src="" class="coin-bg-icon" alt="coin logo">
+        <img id="coinIcon" src="" class="coin-bg-icon" alt="">
         <div class="grid-inputs">
+            <div><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL (TP)</option></select></div>
             <div><label>Tanggal</label><input type="date" id="tanggal"></div>
-            <div><label>Harga Beli ($)</label><input type="number" id="harga" placeholder="0.00"></div>
+            <div><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00"></div>
             <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
         </div>
         <div class="btn-group">
-            <button class="btn-primary" onclick="tambah()">+ Tambah Data</button>
+            <button class="btn-primary" onclick="tambah()">Eksekusi Transaksi</button>
             <button class="btn-share" onclick="generateShareImage()">📸 Share PNL</button>
-            <button class="btn-secondary" onclick="exportCSV()">Export</button>
             <button class="btn-secondary" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
         </div>
     </div>
 
     <div class="card stats-grid">
-        <div class="stat-item"><div class="stat-label" id="labelModal">Total Modal</div><div class="stat-value" id="totalModal">0</div></div>
+        <div class="stat-item"><div class="stat-label" id="labelModal">Net Investasi</div><div class="stat-value" id="totalModal">0</div></div>
         <div class="stat-item" id="statAvg"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
-        <div class="stat-item" id="statLive">
-            <div class="stat-label">Live Price <span class="live-indicator"></span></div>
-            <div class="stat-value" id="livePrice" style="color: var(--primary)">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">Unrealized P/L ($) <span id="summaryIndicator" class="live-indicator hidden"></span></div>
-            <div class="stat-value" id="upl">0</div>
-        </div>
+        <div class="stat-item" id="statLive"><div class="stat-label">Live Price <span class="live-indicator"></span></div><div class="stat-value" id="livePrice" style="color:var(--primary)">0</div></div>
+        <div class="stat-item"><div class="stat-label">Floating P/L ($)</div><div class="stat-value" id="upl">0</div></div>
         <div class="stat-item" style="border-left: 3px solid var(--primary)"><div class="stat-label">Profit / Loss (%)</div><div class="stat-value" id="uplPct">0%</div></div>
+    </div>
+
+    <div class="card" id="chartCard">
+        <div class="stat-label" style="margin-bottom: 10px;">Portfolio Performance Graph</div>
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
     </div>
 
     <div class="card">
@@ -171,9 +140,8 @@
                 <tbody id="tabel"></tbody>
             </table>
         </div>
-        <div id="emptyState" class="empty-state hidden">
-            <span class="empty-state-icon">📊</span>
-            <div class="empty-state-text" id="emptyText">Belum ada transaksi, klik Tambah Data untuk memulai.</div>
+        <div id="emptyState" style="text-align:center; padding:40px; color:var(--text-muted)" class="hidden">
+            <span style="font-size:40px">📊</span><br>Belum ada transaksi.
         </div>
     </div>
 </div>
@@ -194,7 +162,7 @@ let currentTab = "SUMMARY";
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = {};
 let data = {};
-let pendingDeleteIdx = null;
+let chartInstance = null;
 
 assets.forEach(asset => {
     data[asset.id] = JSON.parse(localStorage.getItem(`dca_${asset.id}`)) || [];
@@ -215,76 +183,102 @@ function switchTab(tabId){
     const statAvg = document.getElementById("statAvg");
     const statLive = document.getElementById("statLive");
     const labelModal = document.getElementById("labelModal");
-    const summaryIndicator = document.getElementById("summaryIndicator");
+    const chartCard = document.getElementById("chartCard");
 
     if(tabId === "SUMMARY") {
         inputCard.classList.add("hidden");
         statAvg.classList.add("hidden");
         statLive.classList.add("hidden");
-        summaryIndicator.classList.remove("hidden");
-        labelModal.innerText = "Portfolio Value";
+        chartCard.classList.add("hidden");
+        labelModal.innerText = "Total Market Value";
     } else {
         inputCard.classList.remove("hidden");
         statAvg.classList.remove("hidden");
         statLive.classList.remove("hidden");
-        summaryIndicator.classList.add("hidden");
-        labelModal.innerText = "Total Modal";
+        chartCard.classList.remove("hidden");
+        labelModal.innerText = "Net Investasi";
         const asset = assets.find(a => a.id === tabId);
         document.getElementById("coinIcon").src = asset.logo;
+        setTimeout(initChart, 100);
     }
     render();
 }
 
 function tambah(){
+    let tipe = document.getElementById("tipe").value;
     let tgl = document.getElementById("tanggal").value;
     let harga = Number(document.getElementById("harga").value);
     let nominal = Number(document.getElementById("nominal").value);
-    if(!tgl || !harga || !nominal) return;
-    data[currentTab].push({tgl, harga, nominal, qty: nominal / harga});
+    if(!tgl || !harga || !nominal) return alert("Isi lengkap!");
+    
+    // Qty Positif jika BUY, Negatif jika SELL
+    let qty = nominal / harga;
+    if(tipe === "SELL") qty = -qty;
+
+    data[currentTab].push({tgl, harga, nominal, qty, tipe});
+    data[currentTab].sort((a,b) => new Date(a.tgl) - new Date(b.tgl));
     localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
     render();
+    initChart();
     document.getElementById("harga").value = '';
     document.getElementById("nominal").value = '';
 }
 
-// Custom Modal Logic
 function hapus(i){
-    pendingDeleteIdx = i;
-    document.getElementById("modalDesc").innerText = `Apakah Anda yakin ingin menghapus transaksi ini dari daftar ${currentTab}?`;
+    document.getElementById("modalDesc").innerText = "Hapus data transaksi ini?";
     document.getElementById("confirmModal").classList.add("active");
     document.getElementById("modalConfirmBtn").onclick = function() {
-        data[currentTab].splice(pendingDeleteIdx, 1);
+        data[currentTab].splice(i, 1);
         localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
         closeModal();
         render();
+        initChart();
     };
 }
 
-function closeModal() {
-    document.getElementById("confirmModal").classList.remove("active");
-    pendingDeleteIdx = null;
-}
-
-function togglePrivacy(){
-    privacy = !privacy;
-    localStorage.setItem("privacy", JSON.stringify(privacy));
-    render();
-}
+function closeModal() { document.getElementById("confirmModal").classList.remove("active"); }
+function togglePrivacy(){ privacy = !privacy; localStorage.setItem("privacy", JSON.stringify(privacy)); render(); }
 
 async function fetchPrices(){
-    const indicators = document.querySelectorAll('.live-indicator');
     try {
         const ids = assets.map(a => a.geckoId).join(',');
         let res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-        if (!res.ok) throw new Error();
         let json = await res.json();
         assets.forEach(asset => { if(json[asset.geckoId]) livePrices[asset.id] = json[asset.geckoId].usd; });
-        indicators.forEach(el => el.classList.remove('offline'));
         render();
-    } catch(e) {
-        indicators.forEach(el => el.classList.add('offline'));
-        if(document.getElementById("livePrice")) document.getElementById("livePrice").innerText = "OFFLINE";
-    }
+    } catch(e) {}
+}
+
+function initChart() {
+    if(currentTab === "SUMMARY") return;
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    if(chartInstance) chartInstance.destroy();
+
+    let labels = [];
+    let modalPoints = [];
+    let runningModal = 0;
+    
+    data[currentTab].forEach(d => {
+        labels.push(d.tgl);
+        runningModal += (d.tipe === "BUY" ? d.nominal : -d.nominal);
+        modalPoints.push(runningModal);
+    });
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Net Investasi ($)',
+                data: modalPoints,
+                borderColor: assets.find(a => a.id === currentTab).color,
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+    });
 }
 
 function render(){
@@ -292,102 +286,63 @@ function render(){
     const tbody = document.getElementById("tabel");
     const tableContainer = document.getElementById("tableContainer");
     const emptyState = document.getElementById("emptyState");
-    const emptyText = document.getElementById("emptyText");
-    
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
     if(currentTab === "SUMMARY") {
-        tableHead.innerHTML = `<tr><th>Asset</th><th>Total Modal</th><th>Market Value</th><th>P/L ($)</th><th>P/L (%)</th></tr>`;
-        let totalPortfolioModal = 0, totalPortfolioValue = 0, rowsHtml = "", hasAnyData = false;
-
+        tableHead.innerHTML = `<tr><th>Asset</th><th>Modal</th><th>Value</th><th>P/L</th><th>%</th></tr>`;
+        let totalVal = 0, rowsHtml = "", hasData = false;
         assets.forEach(asset => {
             let assetModal = 0, assetQty = 0;
-            data[asset.id].forEach(d => { assetModal += d.nominal; assetQty += d.qty; });
-            if(assetModal > 0) {
-                hasAnyData = true;
-                let liveVal = assetQty * livePrices[asset.id], assetUpl = liveVal - assetModal, assetPct = (assetUpl / assetModal) * 100;
-                totalPortfolioModal += assetModal; totalPortfolioValue += liveVal;
-                rowsHtml += `<tr><td><b>${asset.id}</b></td><td>${privacy ? "••••" : "$" + assetModal.toLocaleString()}</td><td>${privacy ? "••••" : "$" + liveVal.toLocaleString(undefined,{maximumFractionDigits:2})}</td><td class="${assetUpl >= 0 ? 'profit' : 'loss'}">${privacy ? "••••" : (assetUpl >= 0 ? '+':'' ) + "$" + assetUpl.toLocaleString(undefined,{maximumFractionDigits:2})}</td><td class="${assetUpl >= 0 ? 'profit' : 'loss'}">${assetPct.toFixed(2)}%</td></tr>`;
+            data[asset.id].forEach(d => { assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal); assetQty += d.qty; });
+            if(assetQty > 0.00000001) {
+                hasData = true;
+                let lv = assetQty * livePrices[asset.id], upl = lv - assetModal;
+                totalVal += lv;
+                rowsHtml += `<tr><td><b>${asset.id}</b></td><td>${privacy ? "••" : "$"+fmt(assetModal)}</td><td>${privacy ? "••" : "$"+fmt(lv)}</td><td class="${upl>=0?'profit':'loss'}">${privacy ? "••" : (upl>=0?'+':'')+"$"+fmt(upl)}</td><td class="${upl>=0?'profit':'loss'}">${(upl/assetModal*100).toFixed(2)}%</td></tr>`;
             }
         });
-
-        if(!hasAnyData) {
-            tableContainer.classList.add("hidden");
-            emptyState.classList.remove("hidden");
-            emptyText.innerText = "Portfolio kosong. Silakan tambah transaksi pada koin pilihan Anda.";
-        } else {
-            tableContainer.classList.remove("hidden");
-            emptyState.classList.add("hidden");
-            tbody.innerHTML = rowsHtml;
-        }
-
-        let netUpl = totalPortfolioValue - totalPortfolioModal, netPct = totalPortfolioModal ? (netUpl / totalPortfolioModal) * 100 : 0;
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalPortfolioValue.toLocaleString(undefined,{maximumFractionDigits:2});
-        document.getElementById("upl").innerText = privacy ? "••••" : (netUpl >= 0 ? '+':'' ) + "$" + netUpl.toLocaleString(undefined,{maximumFractionDigits:2});
-        document.getElementById("upl").className = `stat-value ${netUpl >= 0 ? 'profit' : 'loss'}`;
-        document.getElementById("uplPct").innerText = (netUpl >= 0 ? "▲ " : "▼ ") + netPct.toFixed(2) + "%";
-        document.getElementById("uplPct").className = `stat-value ${netUpl >= 0 ? 'profit' : 'loss'}`;
+        tbody.innerHTML = rowsHtml;
+        tableContainer.className = hasData ? "table-wrapper" : "hidden";
+        emptyState.className = hasData ? "hidden" : "";
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalVal);
     } else {
-        tableHead.innerHTML = `<tr><th>Tanggal</th><th>Harga Beli</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr>`;
-        if(data[currentTab].length === 0) {
-            tableContainer.classList.add("hidden");
-            emptyState.classList.remove("hidden");
-            emptyText.innerText = `Belum ada transaksi ${currentTab}, klik Tambah Data untuk memulai.`;
-        } else {
-            tableContainer.classList.remove("hidden");
-            emptyState.classList.add("hidden");
-            let totalModal = 0, totalQty = 0, rowsHtml = "";
-            data[currentTab].forEach((d,i)=>{
-                totalModal += d.nominal; totalQty += d.qty;
-                rowsHtml += `<tr><td>${d.tgl}</td><td>$${d.harga.toLocaleString()}</td><td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td><td>${privacy ? "••••" : d.qty.toFixed(8)}</td><td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td></tr>`;
-            });
-            tbody.innerHTML = rowsHtml;
-            let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0, price = livePrices[currentTab], upl = (totalQty * price) - totalModal, uplPct = totalModal ? (upl / totalModal) * 100 : 0;
-            document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
-            document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
-            document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
-            document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
-            document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
-            document.getElementById("uplPct").innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
-            document.getElementById("uplPct").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
-        }
+        tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
+        let assetModal = 0, assetQty = 0, rowsHtml = "";
+        data[currentTab].forEach((d,i)=>{
+            assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal);
+            assetQty += d.qty;
+            rowsHtml += `<tr><td class="type-${d.tipe.toLowerCase()}">${d.tipe}</td><td>${d.tgl}</td><td>$${fmt(d.harga)}</td><td>${privacy ? "••" : "$"+fmt(d.nominal)}</td><td>${privacy ? "••" : d.qty.toFixed(6)}</td><td><span class="badge-danger" onclick="hapus(${i})">X</span></td></tr>`;
+        });
+        tbody.innerHTML = rowsHtml;
+        tableContainer.className = data[currentTab].length ? "table-wrapper" : "hidden";
+        emptyState.className = data[currentTab].length ? "hidden" : "";
+        
+        let price = livePrices[currentTab], lv = assetQty * price, upl = lv - assetModal, pct = assetModal > 0 ? (upl/assetModal*100) : 0;
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(assetModal);
+        document.getElementById("avgBuy").innerText = assetQty > 0 ? "$" + fmt(assetModal / assetQty) : "$0";
+        document.getElementById("livePrice").innerText = "$" + fmt(price);
+        document.getElementById("upl").innerText = privacy ? "••••" : (upl>=0?'+':'') + "$" + fmt(upl);
+        document.getElementById("upl").className = "stat-value " + (upl>=0?"profit":"loss");
+        document.getElementById("uplPct").innerText = (upl>=0?"▲ ":"▼ ") + pct.toFixed(2) + "%";
+        document.getElementById("uplPct").className = "stat-value " + (upl>=0?"profit":"loss");
     }
 }
 
+function fmt(n) { return Number(n).toLocaleString(undefined, {maximumFractionDigits: 2}); }
+
 function generateShareImage() {
-    if(currentTab === "SUMMARY") return alert("Pilih aset spesifik.");
-    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d"), asset = assets.find(a => a.id === currentTab);
-    const assetModal = data[currentTab].reduce((a, b) => a + b.nominal, 0), assetQty = data[currentTab].reduce((a, b) => a + b.qty, 0), price = livePrices[currentTab];
-    const upl = (assetQty * price) - assetModal, uplPct = assetModal ? (upl / assetModal) * 100 : 0, isProfit = upl >= 0, colorPNL = isProfit ? "#10b981" : "#ef4444";
-    ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.textAlign = "right";
-    if (currentTab === "BTC") { ctx.fillStyle = "#F7931A"; ctx.font = "bold 80px Inter"; ctx.fillText("₿ BTC", 750, 110); }
-    else if (currentTab === "SOL") { ctx.fillStyle = "#A464FA"; ctx.font = "bold 80px Inter"; ctx.fillText("SOL", 750, 110); }
-    else if (currentTab === "ETH") { ctx.fillStyle = "#9ca3af"; ctx.font = "bold 80px Inter"; ctx.fillText("ETH", 750, 110); }
-    else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 750, 110); }
-    ctx.textAlign = "left"; ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 60);
-    ctx.fillStyle = "#64748b"; ctx.font = "16px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 90);
-    ctx.fillStyle = colorPNL; ctx.font = "bold 100px Inter"; ctx.fillText((isProfit ? "+" : "") + uplPct.toFixed(2) + "%", 50, 220);
-    ctx.font = "bold 20px Inter"; ctx.fillText(isProfit ? "PROFIT" : "LOSS", 55, 250);
-    ctx.strokeStyle = "#334155"; ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
-    const drawSub = (l, v, x) => { ctx.fillStyle = "#94a3b8"; ctx.font = "14px Inter"; ctx.fillText(l, x, 320); ctx.fillStyle = "white"; ctx.font = "bold 24px Inter"; ctx.fillText(v, x, 355); };
-    drawSub("AVG BUY", "$" + (assetQty ? (assetModal/assetQty).toLocaleString(undefined,{maximumFractionDigits:2}) : 0), 50);
-    drawSub("LAST PRICE", "$" + price.toLocaleString(), 300);
-    drawSub("ASSET", currentTab, 550);
-    ctx.fillStyle = "#334155"; ctx.fillRect(0, 400, 800, 50);
-    ctx.fillStyle = "#94a3b8"; ctx.font = "italic 14px Inter"; ctx.fillText("Strategy: Martingale DCA Tracking System", 50, 430);
+    if(currentTab === "SUMMARY") return;
+    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
+    let assetModal = 0, assetQty = 0;
+    data[currentTab].forEach(d => { assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal); assetQty += d.qty; });
+    const upl = (assetQty * livePrices[currentTab]) - assetModal, isP = upl >= 0;
+    ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, 800, 450);
+    ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 100px Inter"; ctx.fillText((isP?"+":"")+ (assetModal?(upl/assetModal*100):0).toFixed(2)+"%", 50, 220);
+    ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText(`${currentTab} DCA Tracker`, 50, 60);
     const a = document.createElement('a'); a.download = `PNL_${currentTab}.png`; a.href = canvas.toDataURL("image/png"); a.click();
 }
 
-function exportCSV(){
-    if(currentTab === "SUMMARY") return;
-    let rows = [["Tanggal","Harga","Nominal","Qty"]];
-    data[currentTab].forEach(d => rows.push([d.tgl, d.harga, d.nominal, d.qty]));
-    let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-    let link = document.createElement("a"); link.href = encodeURI(csv); link.download = `DCA_${currentTab}.csv`; link.click();
-}
-
-fetchPrices();
-setInterval(fetchPrices, 60000);
+fetchPrices(); setInterval(fetchPrices, 60000);
 switchTab("SUMMARY");
 </script>
 </body>
