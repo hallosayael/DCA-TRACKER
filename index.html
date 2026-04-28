@@ -62,7 +62,7 @@
         .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
         .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 15px; position: relative; overflow: hidden; min-height: 100px; }
         
         .coin-bg-icon {
             position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
@@ -84,29 +84,9 @@
         .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px; }
         .stat-value { font-size: 16px; font-weight: 700; margin-top: 4px; }
 
-/* Indikator Live (Online) */
-.live-indicator {
-    width: 8px;
-    height: 8px;
-    background-color: var(--success);
-    border-radius: 50%;
-    display: inline-block;
-    box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
-    animation: pulse 2s infinite;
-}
-
-/* Indikator Error (Offline/Hang) */
-.live-indicator.offline {
-    background-color: var(--danger);
-    animation: none; /* Berhenti berkedip agar terlihat 'mati' */
-    box-shadow: none;
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
+        .live-indicator { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 0 rgba(16, 185, 129, 0.4); animation: pulse 2s infinite; }
+        .live-indicator.offline { background-color: var(--danger); animation: none; box-shadow: none; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
         .table-wrapper { overflow-x: auto; position: relative; z-index: 1; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -118,9 +98,37 @@
         .loss { color: var(--danger); }
         #shareCanvas { display: none; }
         .hidden { display: none !important; }
+
+        /* Empty State Styling */
+        .empty-state { text-align: center; padding: 40px 20px; }
+        .empty-state-icon { font-size: 40px; margin-bottom: 15px; opacity: 0.5; display: block; }
+        .empty-state-text { color: var(--text-muted); font-weight: 500; font-size: 14px; }
+
+        /* Custom Modal Styling */
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card { background: white; padding: 24px; border-radius: 20px; max-width: 400px; width: 90%; transform: translateY(20px); transition: 0.3s; text-align: center; }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-title { font-weight: 700; font-size: 18px; margin-bottom: 10px; }
+        .modal-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+        .modal-btns { display: flex; gap: 10px; }
+        .modal-btns button { flex: 1; padding: 12px; }
+        .btn-confirm { background: var(--danger); color: white; }
+        .btn-cancel { background: #f1f5f9; color: var(--text-main); }
     </style>
 </head>
 <body>
+
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-card">
+        <div class="modal-title">Konfirmasi Hapus</div>
+        <div class="modal-desc" id="modalDesc">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.</div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeModal()">Batal</button>
+            <button class="btn-confirm" id="modalConfirmBtn">Hapus</button>
+        </div>
+    </div>
+</div>
 
 <div class="container">
     <h2>DCA Tracker Pro</h2>
@@ -146,28 +154,26 @@
         <div class="stat-item"><div class="stat-label" id="labelModal">Total Modal</div><div class="stat-value" id="totalModal">0</div></div>
         <div class="stat-item" id="statAvg"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
         <div class="stat-item" id="statLive">
-            <div class="stat-label">
-                Live Price 
-                <span class="live-indicator"></span>
-            </div>
+            <div class="stat-label">Live Price <span class="live-indicator"></span></div>
             <div class="stat-value" id="livePrice" style="color: var(--primary)">0</div>
         </div>
         <div class="stat-item">
-            <div class="stat-label">
-                Unrealized P/L ($)
-                <span id="summaryIndicator" class="live-indicator hidden"></span>
-            </div>
+            <div class="stat-label">Unrealized P/L ($) <span id="summaryIndicator" class="live-indicator hidden"></span></div>
             <div class="stat-value" id="upl">0</div>
         </div>
         <div class="stat-item" style="border-left: 3px solid var(--primary)"><div class="stat-label">Profit / Loss (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
 
     <div class="card">
-        <div class="table-wrapper">
+        <div class="table-wrapper" id="tableContainer">
             <table id="mainTable">
                 <thead id="tableHead"></thead>
                 <tbody id="tabel"></tbody>
             </table>
+        </div>
+        <div id="emptyState" class="empty-state hidden">
+            <span class="empty-state-icon">📊</span>
+            <div class="empty-state-text" id="emptyText">Belum ada transaksi, klik Tambah Data untuk memulai.</div>
         </div>
     </div>
 </div>
@@ -188,6 +194,7 @@ let currentTab = "SUMMARY";
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = {};
 let data = {};
+let pendingDeleteIdx = null;
 
 assets.forEach(asset => {
     data[asset.id] = JSON.parse(localStorage.getItem(`dca_${asset.id}`)) || [];
@@ -232,7 +239,7 @@ function tambah(){
     let tgl = document.getElementById("tanggal").value;
     let harga = Number(document.getElementById("harga").value);
     let nominal = Number(document.getElementById("nominal").value);
-    if(!tgl || !harga || !nominal) return alert("Isi data!");
+    if(!tgl || !harga || !nominal) return;
     data[currentTab].push({tgl, harga, nominal, qty: nominal / harga});
     localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
     render();
@@ -240,12 +247,22 @@ function tambah(){
     document.getElementById("nominal").value = '';
 }
 
+// Custom Modal Logic
 function hapus(i){
-    if(confirm("Hapus?")){
-        data[currentTab].splice(i,1);
+    pendingDeleteIdx = i;
+    document.getElementById("modalDesc").innerText = `Apakah Anda yakin ingin menghapus transaksi ini dari daftar ${currentTab}?`;
+    document.getElementById("confirmModal").classList.add("active");
+    document.getElementById("modalConfirmBtn").onclick = function() {
+        data[currentTab].splice(pendingDeleteIdx, 1);
         localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
+        closeModal();
         render();
-    }
+    };
+}
+
+function closeModal() {
+    document.getElementById("confirmModal").classList.remove("active");
+    pendingDeleteIdx = null;
 }
 
 function togglePrivacy(){
@@ -255,57 +272,55 @@ function togglePrivacy(){
 }
 
 async function fetchPrices(){
-    // Ambil semua elemen indikator
     const indicators = document.querySelectorAll('.live-indicator');
-    
     try {
         const ids = assets.map(a => a.geckoId).join(',');
         let res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-        
-        if (!res.ok) throw new Error("API Limit"); // Cek jika status bukan 200 (OK)
-
+        if (!res.ok) throw new Error();
         let json = await res.json();
-        
-        assets.forEach(asset => {
-            if(json[asset.geckoId]) livePrices[asset.id] = json[asset.geckoId].usd;
-        });
-
-        // JIKA BERHASIL: Pastikan lampu berwarna hijau (hapus class offline)
+        assets.forEach(asset => { if(json[asset.geckoId]) livePrices[asset.id] = json[asset.geckoId].usd; });
         indicators.forEach(el => el.classList.remove('offline'));
-        
         render();
     } catch(e) {
-        console.log("Fetch failed, setting indicator to offline");
-        
-        // JIKA GAGAL (API Down/Internet Mati): Ubah lampu jadi merah
         indicators.forEach(el => el.classList.add('offline'));
-        
-        // Opsional: Ubah teks harga menjadi 'OFFLINE' agar user tahu
-        const priceDisplay = document.getElementById("livePrice");
-        if(priceDisplay) priceDisplay.innerText = "OFFLINE";
+        if(document.getElementById("livePrice")) document.getElementById("livePrice").innerText = "OFFLINE";
     }
 }
 
 function render(){
     const tableHead = document.getElementById("tableHead");
     const tbody = document.getElementById("tabel");
+    const tableContainer = document.getElementById("tableContainer");
+    const emptyState = document.getElementById("emptyState");
+    const emptyText = document.getElementById("emptyText");
+    
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
     if(currentTab === "SUMMARY") {
         tableHead.innerHTML = `<tr><th>Asset</th><th>Total Modal</th><th>Market Value</th><th>P/L ($)</th><th>P/L (%)</th></tr>`;
-        let totalPortfolioModal = 0, totalPortfolioValue = 0;
-        let rowsHtml = "";
+        let totalPortfolioModal = 0, totalPortfolioValue = 0, rowsHtml = "", hasAnyData = false;
 
         assets.forEach(asset => {
             let assetModal = 0, assetQty = 0;
             data[asset.id].forEach(d => { assetModal += d.nominal; assetQty += d.qty; });
             if(assetModal > 0) {
+                hasAnyData = true;
                 let liveVal = assetQty * livePrices[asset.id], assetUpl = liveVal - assetModal, assetPct = (assetUpl / assetModal) * 100;
                 totalPortfolioModal += assetModal; totalPortfolioValue += liveVal;
                 rowsHtml += `<tr><td><b>${asset.id}</b></td><td>${privacy ? "••••" : "$" + assetModal.toLocaleString()}</td><td>${privacy ? "••••" : "$" + liveVal.toLocaleString(undefined,{maximumFractionDigits:2})}</td><td class="${assetUpl >= 0 ? 'profit' : 'loss'}">${privacy ? "••••" : (assetUpl >= 0 ? '+':'' ) + "$" + assetUpl.toLocaleString(undefined,{maximumFractionDigits:2})}</td><td class="${assetUpl >= 0 ? 'profit' : 'loss'}">${assetPct.toFixed(2)}%</td></tr>`;
             }
         });
-        tbody.innerHTML = rowsHtml || `<tr><td colspan="5" style="text-align:center">Belum ada data.</td></tr>`;
+
+        if(!hasAnyData) {
+            tableContainer.classList.add("hidden");
+            emptyState.classList.remove("hidden");
+            emptyText.innerText = "Portfolio kosong. Silakan tambah transaksi pada koin pilihan Anda.";
+        } else {
+            tableContainer.classList.remove("hidden");
+            emptyState.classList.add("hidden");
+            tbody.innerHTML = rowsHtml;
+        }
+
         let netUpl = totalPortfolioValue - totalPortfolioModal, netPct = totalPortfolioModal ? (netUpl / totalPortfolioModal) * 100 : 0;
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalPortfolioValue.toLocaleString(undefined,{maximumFractionDigits:2});
         document.getElementById("upl").innerText = privacy ? "••••" : (netUpl >= 0 ? '+':'' ) + "$" + netUpl.toLocaleString(undefined,{maximumFractionDigits:2});
@@ -314,25 +329,33 @@ function render(){
         document.getElementById("uplPct").className = `stat-value ${netUpl >= 0 ? 'profit' : 'loss'}`;
     } else {
         tableHead.innerHTML = `<tr><th>Tanggal</th><th>Harga Beli</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr>`;
-        let totalModal = 0, totalQty = 0, rowsHtml = "";
-        data[currentTab].forEach((d,i)=>{
-            totalModal += d.nominal; totalQty += d.qty;
-            rowsHtml += `<tr><td>${d.tgl}</td><td>$${d.harga.toLocaleString()}</td><td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td><td>${privacy ? "••••" : d.qty.toFixed(8)}</td><td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td></tr>`;
-        });
-        tbody.innerHTML = rowsHtml;
-        let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0, price = livePrices[currentTab], upl = (totalQty * price) - totalModal, uplPct = totalModal ? (upl / totalModal) * 100 : 0;
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
-        document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
-        document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
-        document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
-        document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
-        document.getElementById("uplPct").innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
-        document.getElementById("uplPct").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+        if(data[currentTab].length === 0) {
+            tableContainer.classList.add("hidden");
+            emptyState.classList.remove("hidden");
+            emptyText.innerText = `Belum ada transaksi ${currentTab}, klik Tambah Data untuk memulai.`;
+        } else {
+            tableContainer.classList.remove("hidden");
+            emptyState.classList.add("hidden");
+            let totalModal = 0, totalQty = 0, rowsHtml = "";
+            data[currentTab].forEach((d,i)=>{
+                totalModal += d.nominal; totalQty += d.qty;
+                rowsHtml += `<tr><td>${d.tgl}</td><td>$${d.harga.toLocaleString()}</td><td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td><td>${privacy ? "••••" : d.qty.toFixed(8)}</td><td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td></tr>`;
+            });
+            tbody.innerHTML = rowsHtml;
+            let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0, price = livePrices[currentTab], upl = (totalQty * price) - totalModal, uplPct = totalModal ? (upl / totalModal) * 100 : 0;
+            document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
+            document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
+            document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
+            document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
+            document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+            document.getElementById("uplPct").innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
+            document.getElementById("uplPct").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+        }
     }
 }
 
 function generateShareImage() {
-    if(currentTab === "SUMMARY") return alert("Pilih aset spesifik untuk share.");
+    if(currentTab === "SUMMARY") return alert("Pilih aset spesifik.");
     const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d"), asset = assets.find(a => a.id === currentTab);
     const assetModal = data[currentTab].reduce((a, b) => a + b.nominal, 0), assetQty = data[currentTab].reduce((a, b) => a + b.qty, 0), price = livePrices[currentTab];
     const upl = (assetQty * price) - assetModal, uplPct = assetModal ? (upl / assetModal) * 100 : 0, isProfit = upl >= 0, colorPNL = isProfit ? "#10b981" : "#ef4444";
@@ -356,7 +379,7 @@ function generateShareImage() {
 }
 
 function exportCSV(){
-    if(currentTab === "SUMMARY") return alert("Pilih aset spesifik.");
+    if(currentTab === "SUMMARY") return;
     let rows = [["Tanggal","Harga","Nominal","Qty"]];
     data[currentTab].forEach(d => rows.push([d.tgl, d.harga, d.nominal, d.qty]));
     let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
