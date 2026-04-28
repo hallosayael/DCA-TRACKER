@@ -1,313 +1,565 @@
 <!DOCTYPE html>
+
 <html lang="id">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>DCA Tracker Pro - Cloud Sync Full</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     
+
     <style>
+
         :root {
+
             --primary: #2563eb; --success: #10b981; --danger: #ef4444;
+
             --bg: #f8fafc; --card: #ffffff; --text-main: #1e293b;
+
             --text-muted: #64748b; --border: #e2e8f0;
+
         }
+
+
 
         * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 15px; }
+
         .container { max-width: 1000px; margin: 0 auto; }
+
         
+
         /* Auth UI */
+
         .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #e2e8f0, #f8fafc); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+
         .login-card { background: white; padding: 50px 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); text-align: center; max-width: 440px; width: 90%; }
+
         .btn-google { background: #ffffff; border: 1px solid #dadce0; color: #3c4043; width: 100%; padding: 14px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; }
 
+
+
         /* App UI */
+
         .user-profile { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 12px 18px; background: white; border-radius: 16px; border: 1px solid var(--border); }
+
         .logout-link { color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 700; text-transform: uppercase; }
+
         h2 { font-weight: 800; text-align: center; margin-bottom: 25px; }
 
+
+
         .tabs-container { overflow-x: auto; display: flex; background: #e2e8f0; padding: 6px; border-radius: 16px; margin-bottom: 20px; scrollbar-width: none; }
+
         .tabs-container::-webkit-scrollbar { display: none; }
+
         .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); }
+
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+
         .tabs-container button.active[data-coin="BTC"] { color: #F7931A; }
+
         .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; }
+
         .tabs-container button.active[data-coin="SOL"] { color: #A464FA; }
+
         .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); }
 
+
+
         .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
+
         .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
+
         
+
         .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
+
         label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
+
         input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
+
         
+
         .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; position: relative; z-index: 1; }
+
         .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; }
+
         .btn-action { background: #f1f5f9; color: var(--text-main); flex: 1; padding: 14px; cursor: pointer; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
         .btn-share { background: #0f172a; color: white; border: none; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
-        .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
-        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 5px; }
-        .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
-        
-        /* Live Indicator Styles */
-        .live-indicator { 
-            width: 8px; 
-            height: 8px; 
-            background-color: var(--success); 
-            border-radius: 50%; 
-            display: inline-block; 
-            animation: pulse 2s infinite; 
-        }
-        .live-indicator.offline { 
-            background-color: var(--danger); 
-            animation: none; 
-            box-shadow: none; 
-        }
 
-        @keyframes pulse { 
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } 
-        }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+
+        .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
+
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; }
+
+        .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
+
+        
+
+        .live-indicator { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; margin-left: 5px; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+
 
         .table-wrapper { overflow-x: auto; }
+
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
         th, td { text-align: left; padding: 16px; border-bottom: 1px solid var(--border); }
+
         .profit { color: var(--success); } .loss { color: var(--danger); }
+
         .hidden { display: none !important; }
+
         #shareCanvas { display: none; }
+
     </style>
+
 </head>
+
 <body>
 
+
+
 <div id="authScreen" class="auth-overlay hidden">
+
     <div class="login-card">
+
         <div style="font-size: 56px; margin-bottom: 24px;">🚀</div>
+
         <h3>DCA Tracker Pro</h3>
+
         <p>Login untuk mengakses dashboard Cloud Anda.</p>
+
         <button class="btn-google" onclick="login()">
+
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+
             Masuk dengan Google
+
         </button>
+
     </div>
+
 </div>
+
+
 
 <div id="appScreen" class="container hidden">
+
     <div class="user-profile">
+
         <div style="font-size:13px; font-weight:500;">User: <span id="userEmail" style="color:var(--primary); font-weight:700;">...</span></div>
+
         <div class="logout-link" onclick="logout()">Logout</div>
+
     </div>
+
+
 
     <h2>DCA Tracker Pro</h2>
+
     <div class="tabs-container" id="menuTabs"></div>
 
+
+
     <div class="card" id="inputCard">
+
         <img id="coinIcon" src="" class="coin-bg-icon">
+
         <div class="grid-inputs">
+
             <div><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
+
             <div><label>Tanggal</label><input type="date" id="tanggal"></div>
+
             <div><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00" step="any"></div>
+
             <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00" step="any"></div>
+
         </div>
+
         <div class="btn-group">
+
             <button class="btn-primary" onclick="tambah()">Simpan ke Cloud</button>
+
             <button class="btn-action btn-share" onclick="generateShareImage()">📸 Share</button>
+
             <button class="btn-action" onclick="exportCSV()">📊 Excel</button>
+
             <button class="btn-action" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
+
         </div>
+
     </div>
+
+
 
     <div class="card stats-grid">
+
         <div class="stat-item"><div class="stat-label">Investasi</div><div class="stat-value" id="totalModal">0</div></div>
-        <div class="stat-item">
-            <div class="stat-label">Live Price <span id="liveStatus" class="live-indicator"></span></div>
-            <div class="stat-value" id="livePrice" style="color:var(--primary)">0</div>
-        </div>
+
+        <div class="stat-item"><div class="stat-label">Live Price <span class="live-indicator"></span></div><div class="stat-value" id="livePrice" style="color:var(--primary)">0</div></div>
+
         <div class="stat-item"><div class="stat-label">P/L ($)</div><div class="stat-value" id="upl">0</div></div>
+
         <div class="stat-item" style="border-left:4px solid var(--primary)"><div class="stat-label">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
+
     </div>
+
+
 
     <div class="card" id="chartCard" style="height: 300px;">
+
         <canvas id="performanceChart"></canvas>
+
     </div>
 
+
+
     <div class="card">
+
         <div class="table-wrapper" id="tableContainer">
+
             <table id="mainTable">
+
                 <thead id="tableHead"></thead>
+
                 <tbody id="tabel"></tbody>
+
             </table>
+
         </div>
+
         <div id="emptyState" style="text-align:center; padding:40px; color:var(--text-muted)" class="hidden">📊 Belum ada transaksi.</div>
+
     </div>
+
 </div>
+
+
 
 <canvas id="shareCanvas" width="800" height="450"></canvas>
 
+
+
 <script>
+
 const SUPABASE_URL = 'https://iuqzuuyihrnangontxft.supabase.co';
+
 const SUPABASE_KEY = 'sb_publishable_-26nDiKXaT6IkPJiTplAdQ_CV5H-MHm';
+
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
+
 const assets = [
+
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
+
     { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
+
     { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
+
     { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
+
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://cryptologos.cc/logos/pax-gold-paxg-logo.png' }
+
 ];
+
+
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null;
 
+
+
 // AUTH
+
 async function checkUser() {
+
     const { data: { user } } = await _supabase.auth.getUser();
+
     if (user) {
+
         currentUser = user;
+
         document.getElementById('userEmail').innerText = user.email;
+
         document.getElementById('authScreen').classList.add('hidden');
+
         document.getElementById('appScreen').classList.remove('hidden');
+
         renderTabs(); switchTab("SUMMARY"); loadData();
+
     } else {
+
         document.getElementById('authScreen').classList.remove('hidden');
+
     }
+
 }
+
 async function login() { await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
+
 async function logout() { await _supabase.auth.signOut(); location.reload(); }
 
+
+
 // DATA
+
 async function loadData() {
+
     if (!currentUser) return;
+
     const { data: dbData } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
+
     assets.forEach(a => { data[a.id] = []; livePrices[a.id] = 0; });
+
     dbData?.forEach(item => { if (data[item.asset_id]) data[item.asset_id].push(item); });
+
     render();
+
 }
+
+
 
 async function tambah() {
+
     const tipe = document.getElementById("tipe").value, tgl = document.getElementById("tanggal").value;
+
     const harga = Number(document.getElementById("harga").value), nominal = Number(document.getElementById("nominal").value);
+
     if(!tgl || !harga || !nominal) return alert("Lengkapi data!");
+
     
+
     let curQ = (data[currentTab] || []).reduce((a, b) => a + b.qty, 0), qInput = nominal/harga;
+
     if(tipe === "SELL" && qInput > curQ) return alert("Saldo tidak cukup!");
 
+
+
     await _supabase.from('transaksi').insert([{
+
         user_id: currentUser.id, asset_id: currentTab, tipe, tanggal: tgl, harga, nominal, 
+
         qty: tipe === "BUY" ? qInput : -qInput
+
     }]);
+
     loadData(); document.getElementById("harga").value = ""; document.getElementById("nominal").value = "";
+
 }
+
+
 
 async function hapus(id) { if(confirm("Hapus?")) { await _supabase.from('transaksi').delete().eq('id', id); loadData(); } }
 
+
+
 // UI & FEATURES
+
 function renderTabs() {
+
     const container = document.getElementById('menuTabs');
+
     let html = `<button class="${currentTab === 'SUMMARY' ? 'active' : ''}" onclick="switchTab('SUMMARY')">SUMMARY</button>`;
+
     html += assets.map(a => `<button class="${currentTab === a.id ? 'active' : ''}" onclick="switchTab('${a.id}')">${a.id}</button>`).join('');
+
     container.innerHTML = html;
+
 }
+
+
 
 function switchTab(id) {
+
     currentTab = id; renderTabs();
+
     document.getElementById("inputCard").className = id === "SUMMARY" ? "card hidden" : "card";
+
     document.getElementById("chartCard").className = id === "SUMMARY" ? "card hidden" : "card";
+
     if (id !== "SUMMARY") { document.getElementById("coinIcon").src = assets.find(a => a.id === id).logo; setTimeout(initChart, 100); }
+
     render();
+
 }
+
+
 
 function render() {
+
     const tbody = document.getElementById("tabel"), tableHead = document.getElementById("tableHead");
+
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
+
+
     if (currentTab === "SUMMARY") {
+
         tableHead.innerHTML = `<tr><th>Asset</th><th>Modal</th><th>Value</th><th>P/L</th></tr>`;
+
         let totalVal = 0, rows = "";
+
         assets.forEach(a => {
+
             let m = 0, q = 0;
+
             data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+
             if (q > 0.00000001) {
+
                 let lp = livePrices[a.id] || 0, v = q * lp, p = v - m; totalVal += v;
+
                 rows += `<tr><td><b>${a.id}</b></td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':'$'+fmt(p)}</td></tr>`;
+
             }
+
         });
+
         tbody.innerHTML = rows; document.getElementById("totalModal").innerText = privacy?"••••":"$"+fmt(totalVal);
+
     } else {
+
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
+
         let m = 0, q = 0, rows = "";
+
         (data[currentTab] || []).forEach(d => {
+
             m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
+
             rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="hapus(${d.id})" style="color:red;cursor:pointer">X</td></tr>`;
+
         });
+
         tbody.innerHTML = rows;
+
         let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m;
+
         document.getElementById("totalModal").innerText = privacy?"••••":"$"+fmt(m);
-        document.getElementById("livePrice").innerText = lp > 0 ? "$"+fmt(lp) : "OFFLINE";
+
+        document.getElementById("livePrice").innerText = "$"+fmt(lp);
+
         document.getElementById("upl").innerText = privacy?"••••":"$"+fmt(p);
+
         document.getElementById("uplPct").innerText = (m>0?(p/m*100).toFixed(2):"0")+"%";
+
     }
+
 }
 
-// SHARE & EXPORT
+
+
+// 📸 SHARE PNL FUNCTION
+
 function generateShareImage() {
+
     if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+
     const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
+
     let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+
     const p = (q * livePrices[currentTab]) - m, pct = m > 0 ? (p/m*100) : 0;
+
+    
+
     ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
+
     ctx.fillStyle = p >= 0 ? "#10b981" : "#ef4444"; ctx.font = "bold 100px Inter"; ctx.fillText((p>=0?"+":"")+pct.toFixed(2)+"%", 50, 240);
+
     ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${currentTab} Performance`, 50, 80);
+
     ctx.fillStyle = "#64748b"; ctx.font = "20px Inter"; ctx.fillText("DCA Tracker Pro Cloud", 50, 120);
+
     const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
+
 }
+
+
+
+// 📊 EXCEL EXPORT FUNCTION
 
 function exportCSV() {
+
     if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+
     let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
+
     data[currentTab].forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
+
     const blob = new Blob([csv], { type: 'text/csv' });
+
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `DCA_${currentTab}.csv`; link.click();
+
 }
+
+
 
 function initChart() {
+
     const ctx = document.getElementById('performanceChart'); if (!ctx) return;
+
     if (chartInstance) chartInstance.destroy();
+
     let labels = [], points = [], running = 0;
+
     data[currentTab]?.forEach(d => { labels.push(d.tanggal); running += (d.tipe === 'BUY' ? d.nominal : -d.nominal); points.push(running); });
+
     chartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Investasi', data: points, borderColor: assets.find(a=>a.id===currentTab).color, fill: true, backgroundColor: 'rgba(0,0,0,0.03)', tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+
 }
+
+
 
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+
 function togglePrivacy() { privacy = !privacy; render(); }
 
-// LIVE INDICATOR LOGIC
 async function fetchPrices() {
+
     const ids = assets.map(a => a.geckoId).join(',');
-    const indicator = document.getElementById('liveStatus');
+
     try {
+
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-        if (!res.ok) throw new Error("API Down");
+
         const json = await res.json();
+
         assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
-        
-        // ONLINE: Hijau dan berdenyut
-        if(indicator) indicator.classList.remove('offline');
+
         render();
-    } catch(e) {
-        console.warn("Koneksi gagal atau limit API tercapai.");
-        // OFFLINE: Merah dan diam
-        if(indicator) indicator.classList.add('offline');
-    }
+
+    } catch(e) {}
+
 }
 
+
+
 (async () => { await fetchPrices(); await checkUser(); setInterval(fetchPrices, 60000); })();
+
 </script>
+
 </body>
+
 </html>
