@@ -209,17 +209,27 @@ function tambah(){
     let tgl = document.getElementById("tanggal").value;
     let harga = Number(document.getElementById("harga").value);
     let nominal = Number(document.getElementById("nominal").value);
-    if(!tgl || !harga || !nominal) return alert("Isi lengkap!");
+    if(!tgl || !harga || !nominal) return alert("Isi data dengan lengkap!");
     
-    // Qty Positif jika BUY, Negatif jika SELL
-    let qty = nominal / harga;
-    if(tipe === "SELL") qty = -qty;
+    // Hitung Qty saat ini sebelum tambah data baru
+    let currentQty = data[currentTab].reduce((a, b) => a + b.qty, 0);
+    let qtyInput = nominal / harga;
 
-    data[currentTab].push({tgl, harga, nominal, qty, tipe});
+    // VALIDASI: Jika SELL, cek apakah Qty cukup
+    if(tipe === "SELL") {
+        if(qtyInput > currentQty) {
+            alert(`⚠️ Transaksi Gagal! Saldo ${currentTab} tidak cukup.\nSaldo saat ini: ${currentQty.toFixed(8)}\nAnda mencoba menjual: ${qtyInput.toFixed(8)}`);
+            return; // Berhenti di sini, data tidak masuk ke storage
+        }
+        qtyInput = -qtyInput; // Jadikan negatif untuk mengurangi saldo
+    }
+
+    data[currentTab].push({tgl, harga, nominal, qty: qtyInput, tipe});
     data[currentTab].sort((a,b) => new Date(a.tgl) - new Date(b.tgl));
     localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
     render();
-    initChart();
+    if(chartInstance) initChart();
+    
     document.getElementById("harga").value = '';
     document.getElementById("nominal").value = '';
 }
@@ -291,9 +301,15 @@ function render(){
     if(currentTab === "SUMMARY") {
         tableHead.innerHTML = `<tr><th>Asset</th><th>Modal</th><th>Value</th><th>P/L</th><th>%</th></tr>`;
         let totalVal = 0, rowsHtml = "", hasData = false;
+        
         assets.forEach(asset => {
             let assetModal = 0, assetQty = 0;
-            data[asset.id].forEach(d => { assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal); assetQty += d.qty; });
+            data[asset.id].forEach(d => { 
+                assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal); 
+                assetQty += d.qty; 
+            });
+
+            // Hanya tampilkan jika koin punya saldo positif (menghindari tampilan koin sisa jual)
             if(assetQty > 0.00000001) {
                 hasData = true;
                 let lv = assetQty * livePrices[asset.id], upl = lv - assetModal;
@@ -308,6 +324,7 @@ function render(){
     } else {
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
         let assetModal = 0, assetQty = 0, rowsHtml = "";
+        
         data[currentTab].forEach((d,i)=>{
             assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal);
             assetQty += d.qty;
@@ -317,14 +334,29 @@ function render(){
         tableContainer.className = data[currentTab].length ? "table-wrapper" : "hidden";
         emptyState.className = data[currentTab].length ? "hidden" : "";
         
-        let price = livePrices[currentTab], lv = assetQty * price, upl = lv - assetModal, pct = assetModal > 0 ? (upl/assetModal*100) : 0;
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(assetModal);
-        document.getElementById("avgBuy").innerText = assetQty > 0 ? "$" + fmt(assetModal / assetQty) : "$0";
-        document.getElementById("livePrice").innerText = "$" + fmt(price);
-        document.getElementById("upl").innerText = privacy ? "••••" : (upl>=0?'+':'') + "$" + fmt(upl);
-        document.getElementById("upl").className = "stat-value " + (upl>=0?"profit":"loss");
-        document.getElementById("uplPct").innerText = (upl>=0?"▲ ":"▼ ") + pct.toFixed(2) + "%";
-        document.getElementById("uplPct").className = "stat-value " + (upl>=0?"profit":"loss");
+        // --- LOGIKA PROTEKSI STATS ---
+        let price = livePrices[currentTab];
+        let lv = assetQty * price;
+        let upl = lv - assetModal;
+        let pct = assetModal > 0 ? (upl/assetModal*100) : 0;
+
+        // CEK APAKAH QTY MINUS (KESALAHAN INPUT JUAL)
+        if (assetQty < -0.00000001) {
+            document.getElementById("totalModal").innerHTML = `<span style="color:var(--danger); font-size:12px">OVER-SELL!</span>`;
+            document.getElementById("avgBuy").innerText = "Err";
+            document.getElementById("upl").innerText = "Qty Minus";
+            document.getElementById("uplPct").innerText = "0%";
+            document.getElementById("uplPct").className = "stat-value";
+        } else {
+            // Tampilan Normal jika Qty Aman
+            document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(assetModal);
+            document.getElementById("avgBuy").innerText = assetQty > 0 ? "$" + fmt(assetModal / assetQty) : "$0";
+            document.getElementById("livePrice").innerText = "$" + fmt(price);
+            document.getElementById("upl").innerText = privacy ? "••••" : (upl>=0?'+':'') + "$" + fmt(upl);
+            document.getElementById("upl").className = "stat-value " + (upl>=0?"profit":"loss");
+            document.getElementById("uplPct").innerText = (upl>=0?"▲ ":"▼ ") + pct.toFixed(2) + "%";
+            document.getElementById("uplPct").className = "stat-value " + (upl>=0?"profit":"loss");
+        }
     }
 }
 
