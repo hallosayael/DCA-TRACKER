@@ -168,12 +168,12 @@ const SUPABASE_KEY = 'sb_publishable_-26nDiKXaT6IkPJiTplAdQ_CV5H-MHm';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const assets = [
-    { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', icon: '₿', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
-    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', icon: 'Ξ', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
-    { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', icon: 'S', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
-    { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', icon: 'B', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
-    { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', icon: '💧', logo: 'https://cryptologos.cc/logos/sui-sui-logo.png' },
-    { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', icon: 'G', logo: 'https://cryptologos.cc/logos/pax-gold-paxg-logo.png' }
+    { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png' },
+    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png' },
+    { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png' },
+    { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
+    { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', logo: 'https://assets.coingecko.com/coins/images/26375/large/sui_asset.png' },
+    { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/paxg.png' }
 ];
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
