@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DCA Tracker Pro - Overall Dashboard</title>
+    <title>DCA Tracker Pro - Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -62,7 +62,7 @@
 .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom: 2px solid #F3BA2F; }
 .tabs-container button.active[data-coin="SUI"] { color: #6FBCF0; border-bottom: 2px solid #6FBCF0; }
 .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
-.tabs-container button.active[data-coin="OVERALL"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
+.tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
         
@@ -96,7 +96,7 @@
         .loss { color: var(--danger); }
         #shareCanvas { display: none; }
         
-        /* Hide Input Card on Overall */
+        /* Hide Input Card on SUMMARY */
         .hidden { display: none !important; }
     </style>
 </head>
@@ -153,7 +153,7 @@ const assets = [
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://cryptologos.cc/logos/pax-gold-paxg-logo.png' }
 ];
 
-let currentTab = "OVERALL"; // Default ke Overall
+let currentTab = "SUMMARY"; // Default ke SUMMARY
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = {};
 let data = {};
@@ -166,10 +166,10 @@ assets.forEach(asset => {
 function renderTabs() {
     const container = document.getElementById('menuTabs');
     let html = `
-        <button class="${currentTab === 'OVERALL' ? 'active' : ''}" 
-                data-coin="OVERALL" 
-                onclick="switchTab('OVERALL')">
-            OVERALL
+        <button class="${currentTab === 'SUMMARY' ? 'active' : ''}" 
+                data-coin="SUMMARY" 
+                onclick="switchTab('SUMMARY')">
+            SUMMARY
         </button>
     `;
     
@@ -193,7 +193,7 @@ function switchTab(tabId){
     const statLive = document.getElementById("statLive");
     const labelModal = document.getElementById("labelModal");
 
-    if(tabId === "OVERALL") {
+    if(tabId === "SUMMARY") {
         inputCard.classList.add("hidden");
         statAvg.classList.add("hidden");
         statLive.classList.add("hidden");
@@ -250,8 +250,8 @@ function render(){
     const tbody = document.getElementById("tabel");
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-    if(currentTab === "OVERALL") {
-        // --- LOGIKA OVERALL ---
+    if(currentTab === "SUMMARY") {
+        // --- LOGIKA SUMMARY ---
         tableHead.innerHTML = `<tr><th>Asset</th><th>Total Modal</th><th>Market Value</th><th>P/L ($)</th><th>P/L (%)</th></tr>`;
         let totalPortfolioModal = 0;
         let totalPortfolioValue = 0;
@@ -285,7 +285,7 @@ function render(){
 
         tbody.innerHTML = rowsHtml || `<tr><td colspan="5" style="text-align:center">Belum ada data di semua aset.</td></tr>`;
         
-        // Update Stats Overall
+        // Update Stats SUMMARY
         let netUpl = totalPortfolioValue - totalPortfolioModal;
         let netPct = totalPortfolioModal ? (netUpl / totalPortfolioModal) * 100 : 0;
 
@@ -328,9 +328,9 @@ function render(){
     }
 }
 
-// Fungsi generateShareImage tetap sama, namun tambahkan proteksi jika di tab Overall
+// Fungsi generateShareImage tetap sama, namun tambahkan proteksi jika di tab SUMMARY
 function generateShareImage() {
-    if(currentTab === "OVERALL") return alert("Gunakan tab koin spesifik untuk share PNL.");
+    if(currentTab === "SUMMARY") return alert("Gunakan tab koin spesifik untuk share PNL.");
     // ... (rest of share logic from previous code)
     const canvas = document.getElementById("shareCanvas");
     const ctx = canvas.getContext("2d");
@@ -368,7 +368,7 @@ function generateShareImage() {
 }
 
 function exportCSV(){
-    if(currentTab === "OVERALL") return alert("Pilih aset spesifik untuk export.");
+    if(currentTab === "SUMMARY") return alert("Pilih aset spesifik untuk export.");
     let rows = [["Tanggal","Harga","Nominal","Qty"]];
     data[currentTab].forEach(d => rows.push([d.tgl, d.harga, d.nominal, d.qty]));
     let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
@@ -380,7 +380,7 @@ function exportCSV(){
 
 fetchPrices();
 setInterval(fetchPrices, 60000);
-switchTab("OVERALL");
+switchTab("SUMMARY");
 </script>
 </body>
 </html>
