@@ -3,9 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DCA Tracker Pro - Dashboard</title>
+    <title>DCA Tracker Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        h2 { font-weight: 700; text-align: center; margin-bottom: 25px; }
+        
+        .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; gap: 4px; margin-bottom: 25px; }
+        .tabs button { flex: 1; padding: 10px; font-weight: 600; border: none; border-radius: 8px; background: transparent; cursor: pointer; color: var(--text-muted); }
+        .tabs button.active { background: var(--card); color: var(--primary); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 20px; position: relative; overflow: hidden; }
+        
+        .coin-bg-icon {
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 150px;
+            height: 150px;
+            opacity: 0.1;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; position: relative; z-index: 1; }
+        label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: rgba(255,255,255,0.9); }
+
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; position: relative; z-index: 1; }
+        button { cursor: pointer; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; flex: 2; }
+        .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-share { background: #0f172a; color: white; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; position: relative; z-index: 1; }
+        .stat-item { padding: 10px; border-left: 3px solid #f1f5f9; }
+        .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+        .stat-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+        .table-wrapper { overflow-x: auto; position: relative; z-index: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        .badge-danger { color: var(--danger); cursor: pointer; font-weight: 600; }
+
+        .profit { color: var(--success); }
+        .loss { color: var(--danger); }
+
+        #shareCanvas { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>DCA Tracker Pro</h2>
+
+    <div class="tabs">
+        <button id="tabBTC" class="active" onclick="switchTab('BTC')">Bitcoin (BTC)</button>
+        <button id="tabPAXG" onclick="switchTab('PAXG')">Gold (PAXG)</button>
+    </div>
+
+    <div class="card">
+        <img id="coinIcon" src="https://cryptologos.cc/logos/bitcoin-btc-logo.png" class="coin-bg-icon" alt="coin logo">
+        
+        <div class="grid-inputs">
+            <div><label>Tanggal</label><input type="date" id="tanggal"></div>
+            <div><label>Harga Beli ($)</label><input type="number" id="harga" placeholder="0.00"></div>
+            <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
+        </div>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="tambah()">+ Tambah Data</button>
+            <button class="btn-share" onclick="generateShareImage()">📸 Share PNL</button>
+            <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+            <button class="btn-secondary" onclick="togglePrivacy()" id="privacyBtn">🔒 Privacy</button>
+        </div>
+    </div>
+
+    <div class="card stats-grid">
+        <div class="stat-item"><div class="stat-label">Total Modal</div><div class="stat-value" id="totalModal">0</div></div>
+        <div class="stat-item"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
+        <div class="stat-item"><div class="stat-label">Live Price</div><div class="stat-value" id="livePrice" style="color: var(--primary)">0</div></div>
+        <div class="stat-item"><div class="stat-label">Unrealized P/L ($)</div><div class="stat-value" id="upl">0</div></div>
+        <div class="stat-item" style="border-left: 3px solid var(--primary)"><div class="stat-label">Profit / Loss (%)</div><div class="stat-value" id="uplPct">0%</div></div>
+    </div>
+
+    <div class="card">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Tanggal</th><th>Harga Beli</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr></thead>
+                <tbody id="tabel"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<canvas id="shareCanvas" width="800" height="450"></canvas>
+
+<script>
+let currentTab = "BTC";
+let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
+let livePrices = { BTC: 0, PAXG: 0 };
+let stats = { avg: 0, live: 0, pct: 0, isProfit: true };
+
+const logos = {
+    BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
+    PAXG: "https://cryptologos.cc/logos/pax-gold-paxg-logo.png"
+};
+
+let data = {
+    BTC: JSON.parse(localStorage.getItem("dca_BTC")) || [],
+    PAXG: JSON.parse(localStorage.getItem("dca_PAXG")) || []
+};
+
+function switchTab(tab){
+    currentTab = tab;
+    document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+    document.getElementById("tab"+tab).classList.add("active");
+    document.getElementById("coinIcon").src = logos[tab];
+    render();
+}
+
+function tambah(){
+    let tgl = document.getElementById("tanggal").value;
+    let harga = Number(document.getElementById("harga").value);
+    let nominal = Number(document.getElementById("nominal").value);
+    if(!tgl || !harga || !nominal) return alert("Isi data!");
+    data[currentTab].push({tgl, harga, nominal, qty: nominal / harga});
+    localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
+    render();
+    document.getElementById("harga").value = '';
+    document.getElementById("nominal").value = '';
+}
+
+function hapus(i){
+    if(confirm("Hapus?")){
+        data[currentTab].splice(i,1);
+        localStorage.setItem("dca_"+currentTab, JSON.stringify(data[currentTab]));
+        render();
+    }
+}
+
+function togglePrivacy(){
+    privacy = !privacy;
+    localStorage.setItem("privacy", JSON.stringify(privacy));
+    render();
+}
+
+async function fetchPrice(){
+    try {
+        let res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,pax-gold&vs_currencies=usd");
+        let json = await res.json();
+        livePrices.BTC = json.bitcoin.usd;
+        livePrices.PAXG = json["pax-gold"].usd;
+        render();
+    } catch(e) { console.log("Price fetch failed"); }
+}
+
+function render(){
+    let tbody = "";
+    let totalModal = 0; let totalQty = 0;
+    document.getElementById("privacyBtn").innerHTML = privacy ? "🔓 Show Info" : "🔒 Privacy";
+
+    data[currentTab].forEach((d,i)=>{
+        totalModal += d.nominal; totalQty += d.qty;
+        tbody += `<tr><td>${d.tgl}</td><td>$${d.harga.toLocaleString()}</td><td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td><td>${privacy ? "••••" : d.qty.toFixed(8)}</td><td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td></tr>`;
+    });
+
+    document.getElementById("tabel").innerHTML = tbody;
+    
+    let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0;
+    let price = livePrices[currentTab];
+    let upl = (totalQty * price) - totalModal;
+    let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
+
+    stats = { avg: avgBuy, live: price, pct: uplPct, isProfit: upl >= 0 };
+
+    document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
+    document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
+    document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
+    document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
+    document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+    
+    let pctElem = document.getElementById("uplPct");
+    pctElem.innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
+    pctElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+}
+
+// FUNGSI SHARE DENGAN LOGO TEKS DINAMIS
+function generateShareImage() {
+    const canvas = document.getElementById("shareCanvas");
+    const ctx = canvas.getContext("2d");
+    const color = stats.isProfit ? "#10b981" : "#ef4444";
+
+    // 1. Reset & Background
+    ctx.fillStyle = "#0f172a"; // Navy gelap
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Menggambar "Logo Teks" di sudut kanan atas
+    if (currentTab === "BTC") {
+        // Gaya Bitcoin: Oranye, Tebal, 
+        ctx.fillStyle = "#F7931A"; // Warna Orange BTC
+        ctx.font = "bold 80px Inter, Arial";
+        ctx.textAlign = "right";
+        ctx.fillText("₿ BTC", 750, 110);
+    } else {
+        // Gaya PAXG: Kuning Emas, Tebal
+        ctx.fillStyle = "#D4AF37"; // Warna Emas PAXG
+        ctx.font = "bold 80px Inter, Arial";
+        ctx.textAlign = "right";
+        ctx.fillText("PAXG", 750, 110);
+    }
+    
+    // Reset text align ke kiri untuk konten utama
+    ctx.textAlign = "left";
+
+    // 3. Header Text (Kiri)
+    ctx.fillStyle = "white";
+    ctx.font = "bold 28px Inter, Arial";
+    ctx.fillText(`${currentTab} Performance`, 50, 60);
+    
+    ctx.fillStyle = "#64748b";
+    ctx.font = "16px Inter, Arial";
+    ctx.fillText("DCA Tracker Pro • Portfolio Snapshot", 50, 90);
+
+    // 4. Main PNL Percentage
+    ctx.fillStyle = color;
+    ctx.font = "bold 100px Inter, Arial";
+    let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
+    ctx.fillText(pctText, 50, 220);
+
+    ctx.font = "bold 20px Inter, Arial";
+    ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
+
+    // 5. Data Grid (Garis Horizontal)
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
+
+    // 6. Sub-stats
+    const drawSubStat = (label, value, x) => {
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "14px Inter, Arial";
+        ctx.fillText(label, x, 320);
+        ctx.fillStyle = "white";
+        ctx.font = "bold 24px Inter, Arial";
+        ctx.fillText(value, x, 355);
+    };
+
+    drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
+    drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
+    drawSubStat("MARKET", currentTab === 'BTC' ? "CRYPTO" : "GOLD ASET", 550);
+
+    // 7. Footer
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(0, 400, 800, 50);
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "italic 14px Inter, Arial";
+    ctx.fillText("Generated by DCA Tracker Pro - Strategy: Automated Martingale", 50, 430);
+
+    // 8. Download Langsung
+    const link = document.createElement('a');
+    link.download = `PNL_${currentTab}_Snapshot.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+}
+
+function exportCSV(){
+    let rows = [["Tanggal","Harga","Nominal","Qty"]];
+    data[currentTab].forEach(d => rows.push([d.tgl, d.harga, d.nominal, d.qty]));
+    let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+    let link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = `DCA_${currentTab}.csv`;
+    link.click();
+}
+
+fetchPrice();
+setInterval(fetchPrice, 60000);
+render();
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DCA Tracker Pro Multi-Asset</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -25,30 +327,45 @@
         
         h2 { font-weight: 700; text-align: center; margin-bottom: 20px; font-size: 1.5rem; }
         
+        /* Menu Navigasi Baru - Scrollable jika koin banyak */
         .tabs-container {
-            overflow-x: auto; display: flex; background: #e2e8f0; padding: 5px; border-radius: 14px; margin-bottom: 20px; scrollbar-width: none;
+            overflow-x: auto;
+            display: flex;
+            background: #e2e8f0;
+            padding: 5px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
         }
-        .tabs-container::-webkit-scrollbar { display: none; }
+        .tabs-container::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome/Safari */
 
         .tabs-container button {
-            flex: 0 0 auto; padding: 10px 20px; font-weight: 600; border: none; border-radius: 10px; background: transparent; cursor: pointer; color: var(--text-muted); white-space: nowrap; border: 2px solid transparent;
+            flex: 0 0 auto;
+            padding: 10px 20px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .tabs-container button.active {
+            background: var(--card);
+            color: var(--primary);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
 
-        .tabs-container button.active { background: var(--card); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom: 2px solid #F7931A; }
-        .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom: 2px solid #3c3c3d; }
-        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom: 2px solid #A464FA; }
-        .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom: 2px solid #F3BA2F; }
-        .tabs-container button.active[data-coin="SUI"] { color: #6FBCF0; border-bottom: 2px solid #6FBCF0; }
-        .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
-        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
-
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
-        .coin-bg-icon { position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 150px; height: 150px; opacity: 0.1; pointer-events: none; filter: grayscale(100%); }
+        
+        .coin-bg-icon {
+            position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+            width: 150px; height: 150px; opacity: 0.1; pointer-events: none; filter: grayscale(100%);
+        }
 
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; position: relative; z-index: 1; }
-        label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; position: relative; z-index: 1; }
+        label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: rgba(255,255,255,0.9); }
 
         .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; position: relative; z-index: 1; }
         button { cursor: pointer; font-weight: 600; padding: 12px 18px; border-radius: 8px; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
@@ -58,13 +375,8 @@
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; position: relative; z-index: 1; }
         .stat-item { padding: 10px; border-left: 3px solid #f1f5f9; }
-        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px; }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
         .stat-value { font-size: 16px; font-weight: 700; margin-top: 4px; }
-
-        .chart-container { height: 250px; width: 100%; margin-top: 10px; }
-
-        .live-indicator { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
         .table-wrapper { overflow-x: auto; position: relative; z-index: 1; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -74,74 +386,47 @@
 
         .profit { color: var(--success); }
         .loss { color: var(--danger); }
-        .type-sell { color: var(--danger); font-weight: bold; }
-        .type-buy { color: var(--success); font-weight: bold; }
-        
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-card { background: white; padding: 24px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; }
-        .btn-confirm { background: var(--danger); color: white; }
-        .hidden { display: none !important; }
         #shareCanvas { display: none; }
     </style>
 </head>
 <body>
 
-<div class="modal-overlay" id="confirmModal">
-    <div class="modal-card">
-        <div style="font-weight:700; margin-bottom:10px">Konfirmasi Hapus</div>
-        <div id="modalDesc" style="color:var(--text-muted); font-size:14px; margin-bottom:20px"></div>
-        <div style="display:flex; gap:10px">
-            <button style="flex:1; background:#f1f5f9" onclick="closeModal()">Batal</button>
-            <button style="flex:1" class="btn-confirm" id="modalConfirmBtn">Hapus</button>
-        </div>
-    </div>
-</div>
-
 <div class="container">
     <h2>DCA Tracker Pro</h2>
 
-    <div class="tabs-container" id="menuTabs"></div>
+    <div class="tabs-container" id="menuTabs">
+        </div>
 
-    <div class="card" id="inputCard">
-        <img id="coinIcon" src="" class="coin-bg-icon" alt="">
+    <div class="card">
+        <img id="coinIcon" src="" class="coin-bg-icon" alt="coin logo">
+        
         <div class="grid-inputs">
-            <div><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL (TP)</option></select></div>
             <div><label>Tanggal</label><input type="date" id="tanggal"></div>
-            <div><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00"></div>
+            <div><label>Harga Beli ($)</label><input type="number" id="harga" placeholder="0.00"></div>
             <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
         </div>
         <div class="btn-group">
-            <button class="btn-primary" onclick="tambah()">Eksekusi Transaksi</button>
+            <button class="btn-primary" onclick="tambah()">+ Tambah Data</button>
             <button class="btn-share" onclick="generateShareImage()">📸 Share PNL</button>
+            <button class="btn-secondary" onclick="exportCSV()">Export</button>
             <button class="btn-secondary" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
         </div>
     </div>
 
     <div class="card stats-grid">
-        <div class="stat-item"><div class="stat-label" id="labelModal">Net Investasi</div><div class="stat-value" id="totalModal">0</div></div>
-        <div class="stat-item" id="statAvg"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
-        <div class="stat-item" id="statLive"><div class="stat-label">Live Price <span class="live-indicator"></span></div><div class="stat-value" id="livePrice" style="color:var(--primary)">0</div></div>
-        <div class="stat-item"><div class="stat-label">Floating P/L ($)</div><div class="stat-value" id="upl">0</div></div>
+        <div class="stat-item"><div class="stat-label">Total Modal</div><div class="stat-value" id="totalModal">0</div></div>
+        <div class="stat-item"><div class="stat-label">Avg. Buy Price</div><div class="stat-value" id="avgBuy">0</div></div>
+        <div class="stat-item"><div class="stat-label">Live Price</div><div class="stat-value" id="livePrice" style="color: var(--primary)">0</div></div>
+        <div class="stat-item"><div class="stat-label">Unrealized P/L ($)</div><div class="stat-value" id="upl">0</div></div>
         <div class="stat-item" style="border-left: 3px solid var(--primary)"><div class="stat-label">Profit / Loss (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
 
-    <div class="card" id="chartCard">
-        <div class="stat-label" style="margin-bottom: 10px;">Portfolio Performance Graph</div>
-        <div class="chart-container">
-            <canvas id="performanceChart"></canvas>
-        </div>
-    </div>
-
     <div class="card">
-        <div class="table-wrapper" id="tableContainer">
-            <table id="mainTable">
-                <thead id="tableHead"></thead>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Tanggal</th><th>Harga Beli</th><th>Nominal</th><th>Qty</th><th>Aksi</th></tr></thead>
                 <tbody id="tabel"></tbody>
             </table>
-        </div>
-        <div id="emptyState" style="text-align:center; padding:40px; color:var(--text-muted)" class="hidden">
-            <span style="font-size:40px">📊</span><br>Belum ada transaksi.
         </div>
     </div>
 </div>
@@ -149,6 +434,7 @@
 <canvas id="shareCanvas" width="800" height="450"></canvas>
 
 <script>
+// Konfigurasi Aset
 const assets = [
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
     { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
@@ -158,192 +444,218 @@ const assets = [
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://cryptologos.cc/logos/pax-gold-paxg-logo.png' }
 ];
 
-let currentTab = "SUMMARY";
+let currentTab = assets[0].id;
 let privacy = JSON.parse(localStorage.getItem("privacy")) || false;
 let livePrices = {};
-let data = {};
-let chartInstance = null;
+let stats = { avg: 0, live: 0, pct: 0, isProfit: true };
 
+// Inisialisasi Data dari LocalStorage
+let data = {};
 assets.forEach(asset => {
     data[asset.id] = JSON.parse(localStorage.getItem(`dca_${asset.id}`)) || [];
     livePrices[asset.id] = 0;
 });
 
+// Render Menu Tabs
 function renderTabs() {
     const container = document.getElementById('menuTabs');
-    let html = `<button class="${currentTab === 'SUMMARY' ? 'active' : ''}" data-coin="SUMMARY" onclick="switchTab('SUMMARY')">SUMMARY</button>`;
-    html += assets.map(asset => `<button class="${currentTab === asset.id ? 'active' : ''}" data-coin="${asset.id}" onclick="switchTab('${asset.id}')">${asset.id}</button>`).join('');
-    container.innerHTML = html;
+    container.innerHTML = assets.map(asset => `
+        <button id="tab${asset.id}" class="${currentTab === asset.id ? 'active' : ''}" 
+                onclick="switchTab('${asset.id}')">
+            ${asset.id}
+        </button>
+    `).join('');
 }
 
 function switchTab(tabId){
     currentTab = tabId;
     renderTabs();
-    const inputCard = document.getElementById("inputCard");
-    const statAvg = document.getElementById("statAvg");
-    const statLive = document.getElementById("statLive");
-    const labelModal = document.getElementById("labelModal");
-    const chartCard = document.getElementById("chartCard");
-
-    if(tabId === "SUMMARY") {
-        inputCard.classList.add("hidden");
-        statAvg.classList.add("hidden");
-        statLive.classList.add("hidden");
-        chartCard.classList.add("hidden");
-        labelModal.innerText = "Total Market Value";
-    } else {
-        inputCard.classList.remove("hidden");
-        statAvg.classList.remove("hidden");
-        statLive.classList.remove("hidden");
-        chartCard.classList.remove("hidden");
-        labelModal.innerText = "Net Investasi";
-        const asset = assets.find(a => a.id === tabId);
-        document.getElementById("coinIcon").src = asset.logo;
-        setTimeout(initChart, 100);
-    }
+    const asset = assets.find(a => a.id === tabId);
+    document.getElementById("coinIcon").src = asset.logo;
     render();
 }
 
 function tambah(){
-    let tipe = document.getElementById("tipe").value;
     let tgl = document.getElementById("tanggal").value;
     let harga = Number(document.getElementById("harga").value);
     let nominal = Number(document.getElementById("nominal").value);
-    if(!tgl || !harga || !nominal) return alert("Isi lengkap!");
-    
-    // Qty Positif jika BUY, Negatif jika SELL
-    let qty = nominal / harga;
-    if(tipe === "SELL") qty = -qty;
-
-    data[currentTab].push({tgl, harga, nominal, qty, tipe});
-    data[currentTab].sort((a,b) => new Date(a.tgl) - new Date(b.tgl));
+    if(!tgl || !harga || !nominal) return alert("Isi data!");
+    data[currentTab].push({tgl, harga, nominal, qty: nominal / harga});
     localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
     render();
-    initChart();
     document.getElementById("harga").value = '';
     document.getElementById("nominal").value = '';
 }
 
 function hapus(i){
-    document.getElementById("modalDesc").innerText = "Hapus data transaksi ini?";
-    document.getElementById("confirmModal").classList.add("active");
-    document.getElementById("modalConfirmBtn").onclick = function() {
-        data[currentTab].splice(i, 1);
+    if(confirm("Hapus?")){
+        data[currentTab].splice(i,1);
         localStorage.setItem(`dca_${currentTab}`, JSON.stringify(data[currentTab]));
-        closeModal();
         render();
-        initChart();
-    };
+    }
 }
 
-function closeModal() { document.getElementById("confirmModal").classList.remove("active"); }
-function togglePrivacy(){ privacy = !privacy; localStorage.setItem("privacy", JSON.stringify(privacy)); render(); }
+function togglePrivacy(){
+    privacy = !privacy;
+    localStorage.setItem("privacy", JSON.stringify(privacy));
+    render();
+}
 
 async function fetchPrices(){
     try {
         const ids = assets.map(a => a.geckoId).join(',');
         let res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
         let json = await res.json();
-        assets.forEach(asset => { if(json[asset.geckoId]) livePrices[asset.id] = json[asset.geckoId].usd; });
+        assets.forEach(asset => {
+            if(json[asset.geckoId]) livePrices[asset.id] = json[asset.geckoId].usd;
+        });
         render();
-    } catch(e) {}
-}
-
-function initChart() {
-    if(currentTab === "SUMMARY") return;
-    const ctx = document.getElementById('performanceChart').getContext('2d');
-    if(chartInstance) chartInstance.destroy();
-
-    let labels = [];
-    let modalPoints = [];
-    let runningModal = 0;
-    
-    data[currentTab].forEach(d => {
-        labels.push(d.tgl);
-        runningModal += (d.tipe === "BUY" ? d.nominal : -d.nominal);
-        modalPoints.push(runningModal);
-    });
-
-    chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Net Investasi ($)',
-                data: modalPoints,
-                borderColor: assets.find(a => a.id === currentTab).color,
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
-    });
+    } catch(e) { console.log("Price fetch failed"); }
 }
 
 function render(){
-    const tableHead = document.getElementById("tableHead");
-    const tbody = document.getElementById("tabel");
-    const tableContainer = document.getElementById("tableContainer");
-    const emptyState = document.getElementById("emptyState");
+    let tbody = "";
+    let totalModal = 0; let totalQty = 0;
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-    if(currentTab === "SUMMARY") {
-        tableHead.innerHTML = `<tr><th>Asset</th><th>Modal</th><th>Value</th><th>P/L</th><th>%</th></tr>`;
-        let totalVal = 0, rowsHtml = "", hasData = false;
-        assets.forEach(asset => {
-            let assetModal = 0, assetQty = 0;
-            data[asset.id].forEach(d => { assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal); assetQty += d.qty; });
-            if(assetQty > 0.00000001) {
-                hasData = true;
-                let lv = assetQty * livePrices[asset.id], upl = lv - assetModal;
-                totalVal += lv;
-                rowsHtml += `<tr><td><b>${asset.id}</b></td><td>${privacy ? "••" : "$"+fmt(assetModal)}</td><td>${privacy ? "••" : "$"+fmt(lv)}</td><td class="${upl>=0?'profit':'loss'}">${privacy ? "••" : (upl>=0?'+':'')+"$"+fmt(upl)}</td><td class="${upl>=0?'profit':'loss'}">${(upl/assetModal*100).toFixed(2)}%</td></tr>`;
-            }
-        });
-        tbody.innerHTML = rowsHtml;
-        tableContainer.className = hasData ? "table-wrapper" : "hidden";
-        emptyState.className = hasData ? "hidden" : "";
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalVal);
-    } else {
-        tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
-        let assetModal = 0, assetQty = 0, rowsHtml = "";
-        data[currentTab].forEach((d,i)=>{
-            assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal);
-            assetQty += d.qty;
-            rowsHtml += `<tr><td class="type-${d.tipe.toLowerCase()}">${d.tipe}</td><td>${d.tgl}</td><td>$${fmt(d.harga)}</td><td>${privacy ? "••" : "$"+fmt(d.nominal)}</td><td>${privacy ? "••" : d.qty.toFixed(6)}</td><td><span class="badge-danger" onclick="hapus(${i})">X</span></td></tr>`;
-        });
-        tbody.innerHTML = rowsHtml;
-        tableContainer.className = data[currentTab].length ? "table-wrapper" : "hidden";
-        emptyState.className = data[currentTab].length ? "hidden" : "";
-        
-        let price = livePrices[currentTab], lv = assetQty * price, upl = lv - assetModal, pct = assetModal > 0 ? (upl/assetModal*100) : 0;
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(assetModal);
-        document.getElementById("avgBuy").innerText = assetQty > 0 ? "$" + fmt(assetModal / assetQty) : "$0";
-        document.getElementById("livePrice").innerText = "$" + fmt(price);
-        document.getElementById("upl").innerText = privacy ? "••••" : (upl>=0?'+':'') + "$" + fmt(upl);
-        document.getElementById("upl").className = "stat-value " + (upl>=0?"profit":"loss");
-        document.getElementById("uplPct").innerText = (upl>=0?"▲ ":"▼ ") + pct.toFixed(2) + "%";
-        document.getElementById("uplPct").className = "stat-value " + (upl>=0?"profit":"loss");
-    }
-}
+    data[currentTab].forEach((d,i)=>{
+        totalModal += d.nominal; totalQty += d.qty;
+        tbody += `<tr>
+            <td>${d.tgl}</td>
+            <td>$${d.harga.toLocaleString()}</td>
+            <td>${privacy ? "••••" : "$"+d.nominal.toLocaleString()}</td>
+            <td>${privacy ? "••••" : d.qty.toFixed(8)}</td>
+            <td><span class="badge-danger" onclick="hapus(${i})">Hapus</span></td>
+        </tr>`;
+    });
 
-function fmt(n) { return Number(n).toLocaleString(undefined, {maximumFractionDigits: 2}); }
+    document.getElementById("tabel").innerHTML = tbody;
+    
+    let avgBuy = totalQty > 0 ? (totalModal / totalQty) : 0;
+    let price = livePrices[currentTab];
+    let upl = (totalQty * price) - totalModal;
+    let uplPct = totalModal ? (upl / totalModal) * 100 : 0;
+
+    stats = { avg: avgBuy, live: price, pct: uplPct, isProfit: upl >= 0 };
+
+    document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + totalModal.toLocaleString();
+    document.getElementById("avgBuy").innerText = "$" + avgBuy.toLocaleString(undefined, {maximumFractionDigits: 2});
+    document.getElementById("livePrice").innerText = price ? "$" + price.toLocaleString() : "---";
+    document.getElementById("upl").innerText = privacy ? "••••" : (upl >= 0 ? "+" : "") + "$" + upl.toLocaleString(undefined, {maximumFractionDigits: 2});
+    document.getElementById("upl").className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+    
+    let pctElem = document.getElementById("uplPct");
+    pctElem.innerText = (upl >= 0 ? "▲ " : "▼ ") + uplPct.toFixed(2) + "%";
+    pctElem.className = `stat-value ${upl >= 0 ? "profit" : "loss"}`;
+}
 
 function generateShareImage() {
-    if(currentTab === "SUMMARY") return;
-    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
-    let assetModal = 0, assetQty = 0;
-    data[currentTab].forEach(d => { assetModal += (d.tipe === "BUY" ? d.nominal : -d.nominal); assetQty += d.qty; });
-    const upl = (assetQty * livePrices[currentTab]) - assetModal, isP = upl >= 0;
-    ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, 800, 450);
-    ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 100px Inter"; ctx.fillText((isP?"+":"")+ (assetModal?(upl/assetModal*100):0).toFixed(2)+"%", 50, 220);
-    ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText(`${currentTab} DCA Tracker`, 50, 60);
-    const a = document.createElement('a'); a.download = `PNL_${currentTab}.png`; a.href = canvas.toDataURL("image/png"); a.click();
+    const canvas = document.getElementById("shareCanvas");
+    const ctx = canvas.getContext("2d");
+    const asset = assets.find(a => a.id === currentTab);
+    const colorPNL = stats.isProfit ? "#10b981" : "#ef4444";
+
+    // 1. Reset & Background
+    ctx.fillStyle = "#0f172a"; // Navy gelap
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Menggambar "Logo Teks / Simbol" di sudut kanan atas
+    ctx.textAlign = "right";
+
+    if (currentTab === "BTC") {
+        // --- KHUSUS BITCOIN: Tampilkan Simbol ₿ ---
+        ctx.fillStyle = "#F7931A"; // Warna Orange BTC asli
+        ctx.font = "bold 80px Inter, Arial";
+        // Menggambar simbol dan teks
+        ctx.fillText("₿ BTC", 750, 110);
+    } else if (currentTab === "SOL") {
+        // Gaya SOL: Ungu
+        ctx.fillStyle = "#A464FA"; 
+        ctx.font = "bold 80px Inter, Arial";
+        ctx.fillText("SOL", 750, 110);
+    } else if (currentTab === "ETH") {
+        // Gaya ETH: Hitam Abu-abu
+        ctx.fillStyle = "#9ca3af"; 
+        ctx.font = "bold 80px Inter, Arial";
+        ctx.fillText("ETH", 750, 110);
+    } else {
+        // Gaya Koin Lain: Warna default dari konfigurasi assets
+        ctx.fillStyle = asset.color;
+        ctx.font = "bold 80px Inter, Arial";
+        ctx.fillText(currentTab, 750, 110);
+    }
+    
+    // Reset text align ke kiri untuk konten utama
+    ctx.textAlign = "left";
+
+    // 3. Header Text (Kiri)
+    ctx.fillStyle = "white";
+    ctx.font = "bold 28px Inter, Arial";
+    ctx.fillText(`${asset.name} Performance`, 50, 60);
+    
+    ctx.fillStyle = "#64748b";
+    ctx.font = "16px Inter, Arial";
+    ctx.fillText("DCA Tracker Pro • Portfolio Snapshot", 50, 90);
+
+    // 4. Main PNL Percentage
+    ctx.fillStyle = colorPNL;
+    ctx.font = "bold 100px Inter, Arial";
+    let pctText = (stats.isProfit ? "+" : "") + stats.pct.toFixed(2) + "%";
+    ctx.fillText(pctText, 50, 220);
+
+    ctx.font = "bold 20px Inter, Arial";
+    ctx.fillText(stats.isProfit ? "PROFIT" : "LOSS", 55, 250);
+
+    // 5. Data Grid (Garis Horizontal)
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(750, 280); ctx.stroke();
+
+    // 6. Sub-stats
+    const drawSubStat = (label, value, x) => {
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "14px Inter, Arial";
+        ctx.fillText(label, x, 320);
+        ctx.fillStyle = "white";
+        ctx.font = "bold 24px Inter, Arial";
+        ctx.fillText(value, x, 355);
+    };
+
+    drawSubStat("AVERAGE BUY", "$" + stats.avg.toLocaleString(undefined, {maximumFractionDigits: 2}), 50);
+    drawSubStat("LAST PRICE", "$" + stats.live.toLocaleString(), 300);
+    // Dinamis menampilkan tipe market (Crypto/Gold)
+    drawSubStat("MARKET", currentTab === 'PAXG' ? "GOLD ASET" : "CRYPTO", 550);
+
+    // 7. Footer
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(0, 400, 800, 50);
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "italic 14px Inter, Arial";
+    ctx.fillText("Generated by DCA Tracker Pro - Strategy: Martingale DCA Tracking System", 50, 430);
+
+    // 8. Download Langsung
+    const link = document.createElement('a');
+    link.download = `PNL_${currentTab}_Snapshot.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
 }
 
-fetchPrices(); setInterval(fetchPrices, 60000);
-switchTab("SUMMARY");
+function exportCSV(){
+    let rows = [["Tanggal","Harga","Nominal","Qty"]];
+    data[currentTab].forEach(d => rows.push([d.tgl, d.harga, d.nominal, d.qty]));
+    let csv = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+    let link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = `DCA_${currentTab}.csv`;
+    link.click();
+}
+
+// Initial Run
+renderTabs();
+switchTab(currentTab);
+fetchPrices();
+setInterval(fetchPrices, 60000);
 </script>
+
 </body>
 </html>
