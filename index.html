@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DCA Tracker Pro - Cloud Sync</title>
+    <title>DCA Tracker Pro - Cloud Sync Full</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,52 +15,62 @@
             --text-muted: #64748b; --border: #e2e8f0;
         }
 
-        * { box-sizing: border-box; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 15px; }
         .container { max-width: 1000px; margin: 0 auto; }
         
-        /* Auth UI Professional */
+        /* Auth UI */
         .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #e2e8f0, #f8fafc); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .login-card { background: white; padding: 50px 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); text-align: center; max-width: 440px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.7); }
-        .login-logo { font-size: 56px; margin-bottom: 24px; display: inline-block; filter: drop-shadow(0 10px 8px rgba(0,0,0,0.1)); }
-        .login-card h3 { font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; letter-spacing: -0.025em; }
-        .login-card p { color: var(--text-muted); font-size: 15px; line-height: 1.6; margin-bottom: 35px; }
         .btn-google { background: #ffffff; border: 1px solid #dadce0; color: #3c4043; width: 100%; padding: 14px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-size: 16px; }
-        .btn-google:hover { background: #f7f8f9; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #d2d4d7; }
+
+        /* Custom Modal Professional */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card { background: white; padding: 32px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; transform: translateY(20px); transition: 0.3s; }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-card h4 { margin: 0 0 12px; font-size: 20px; font-weight: 800; }
+        .modal-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+        .modal-btns { display: flex; gap: 12px; }
+        .btn-modal { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; }
 
         /* App UI */
         .user-profile { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 12px 18px; background: white; border-radius: 16px; border: 1px solid var(--border); }
         .logout-link { color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 700; text-transform: uppercase; }
+        h2 { font-weight: 800; text-align: center; margin-bottom: 25px; letter-spacing: -0.025em; }
 
-        h2 { font-weight: 800; text-align: center; margin-bottom: 25px; font-size: 1.75rem; letter-spacing: -0.025em; }
+        /* Tabs with Brand Colors */
         .tabs-container { overflow-x: auto; display: flex; background: #e2e8f0; padding: 6px; border-radius: 16px; margin-bottom: 20px; scrollbar-width: none; }
-        .tabs-container::-webkit-scrollbar { display: none; }
-        .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); white-space: nowrap; border-bottom: 2px solid transparent; }
+        .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         
         .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
         .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom-color: #3c3c3d; }
         .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
+        .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom-color: #F3BA2F; }
+        .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom-color: #D4AF37; }
         .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom-color: var(--primary); }
 
         .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
         .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
+        
         .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
         label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
         input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
+        
         .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; position: relative; z-index: 1; }
-        .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; font-size: 15px; }
+        .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; }
         .btn-action { background: #f1f5f9; color: var(--text-main); flex: 1; padding: 14px; cursor: pointer; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-share { background: #0f172a; color: white; border: none; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
         .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
-        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; display: flex; align-items: center; gap: 5px; }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 5px; }
         .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
         
-        /* Live Indicator Pulse Animation */
-        .live-indicator { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
-        .live-indicator.offline { background-color: var(--danger); animation: none; box-shadow: none; }
+        /* Indicator Logic */
+        .live-indicator { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+        .live-indicator.offline { background-color: var(--danger); animation: none !important; box-shadow: none !important; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
         .table-wrapper { overflow-x: auto; }
@@ -70,18 +80,28 @@
         .hidden { display: none !important; }
         #shareCanvas { display: none; }
 
-        /* Empty State */
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .empty-state-icon { font-size: 48px; margin-bottom: 15px; display: block; opacity: 0.5; }
     </style>
 </head>
 <body>
 
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-card">
+        <h4>Konfirmasi Hapus</h4>
+        <p>Apakah Anda yakin ingin menghapus data transaksi ini secara permanen dari cloud?</p>
+        <div class="modal-btns">
+            <button class="btn-modal" style="background:#f1f5f9" onclick="closeModal()">Batal</button>
+            <button class="btn-modal" style="background:var(--danger); color:white" id="confirmDeleteBtn">Hapus Data</button>
+        </div>
+    </div>
+</div>
+
 <div id="authScreen" class="auth-overlay hidden">
     <div class="login-card">
-        <div class="login-logo">🚀</div>
+        <div style="font-size: 56px; margin-bottom: 24px;">🚀</div>
         <h3>DCA Tracker Pro</h3>
-        <p>Kelola akumulasi aset kripto Anda secara cerdas. Sinkronisasi data cloud aman via Google.</p>
+        <p>Akses dashboard investasi cerdas Anda. Semua data tersinkronisasi aman di cloud.</p>
         <button class="btn-google" onclick="login()">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
             Masuk dengan Google
@@ -116,7 +136,7 @@
 
     <div class="card stats-grid">
         <div class="stat-item"><div class="stat-label">Net Investasi</div><div class="stat-value" id="totalModal">0</div></div>
-        <div class="stat-item">
+        <div class="stat-item" id="livePriceContainer">
             <div class="stat-label">Live Price <span id="liveStatus" class="live-indicator"></span></div>
             <div class="stat-value" id="livePrice" style="color:var(--primary)">0</div>
         </div>
@@ -167,9 +187,7 @@ async function checkUser() {
         document.getElementById('userEmail').innerText = user.email;
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('appScreen').classList.remove('hidden');
-        renderTabs(); 
-        switchTab("SUMMARY");
-        loadData();
+        renderTabs(); switchTab("SUMMARY"); loadData();
     } else {
         document.getElementById('authScreen').classList.remove('hidden');
     }
@@ -177,7 +195,7 @@ async function checkUser() {
 async function login() { await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
 async function logout() { await _supabase.auth.signOut(); location.reload(); }
 
-// --- DATA LOGIC ---
+// --- DATA ---
 async function loadData() {
     if (!currentUser) return;
     const { data: dbData } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
@@ -196,9 +214,20 @@ async function tambah() {
     loadData(); document.getElementById("harga").value = ""; document.getElementById("nominal").value = "";
 }
 
-async function hapus(id) { if(confirm("Hapus?")) { await _supabase.from('transaksi').delete().eq('id', id); loadData(); } }
+// --- CUSTOM MODAL LOGIC ---
+function openModal(id) {
+    const modal = document.getElementById('confirmModal');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    modal.classList.add('active');
+    confirmBtn.onclick = async () => {
+        await _supabase.from('transaksi').delete().eq('id', id);
+        closeModal();
+        loadData();
+    };
+}
+function closeModal() { document.getElementById('confirmModal').classList.remove('active'); }
 
-// --- UI & TABS ---
+// --- UI RENDER ---
 function renderTabs() {
     const container = document.getElementById('menuTabs');
     let html = `<button class="${currentTab === 'SUMMARY' ? 'active' : ''}" data-coin="SUMMARY" onclick="switchTab('SUMMARY')">SUMMARY</button>`;
@@ -210,6 +239,7 @@ function switchTab(id) {
     currentTab = id; renderTabs();
     document.getElementById("inputCard").className = id === "SUMMARY" ? "card hidden" : "card";
     document.getElementById("chartCard").className = id === "SUMMARY" ? "card hidden" : "card";
+    document.getElementById("livePriceContainer").className = id === "SUMMARY" ? "stat-item hidden" : "stat-item";
     if (id !== "SUMMARY") { document.getElementById("coinIcon").src = assets.find(a => a.id === id).logo; setTimeout(initChart, 100); }
     render();
 }
@@ -233,26 +263,36 @@ function render() {
                 rows += `<tr><td><b>${a.id}</b></td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':'$'+fmt(p)}</td></tr>`;
             }
         });
-        tbody.innerHTML = rows; container.className = hasData ? "table-wrapper" : "hidden"; empty.className = hasData ? "hidden" : "empty-state";
+        tbody.innerHTML = rows;
+        container.className = hasData ? "table-wrapper" : "hidden";
+        empty.className = hasData ? "hidden" : "empty-state";
+        emptyT.innerText = "Belum ada aset aktif di portofolio Anda.";
         document.getElementById("totalModal").innerText = privacy?"••••":"$"+fmt(totalVal);
+        document.getElementById("upl").innerText = "---";
+        document.getElementById("uplPct").innerText = "---";
     } else {
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
         let m = 0, q = 0, rows = "";
         const currentData = data[currentTab] || [];
-        currentData.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="hapus(${d.id})" style="color:red;cursor:pointer">X</td></tr>`; });
-        tbody.innerHTML = rows; container.className = currentData.length ? "table-wrapper" : "hidden"; empty.className = currentData.length ? "hidden" : "empty-state";
-        emptyT.innerText = `Belum ada riwayat transaksi ${currentTab}.`;
+        currentData.forEach(d => {
+            m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
+            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
+        });
+        tbody.innerHTML = rows;
+        container.className = currentData.length ? "table-wrapper" : "hidden";
+        empty.className = currentData.length ? "hidden" : "empty-state";
+        emptyT.innerText = `Belum ada riwayat transaksi ${currentTab}. Klik Simpan ke Cloud untuk mencatat.`;
         
         let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m;
         document.getElementById("totalModal").innerText = privacy?"••••":"$"+fmt(m);
         
-        // SYNC LIVE STATUS
         if (isApiOnline && lp > 0) {
             livePriceEl.innerText = "$" + fmt(lp);
             livePriceEl.style.color = "var(--primary)";
             statusInd.classList.remove('offline');
             document.getElementById("upl").innerText = privacy ? "••••" : (p >= 0 ? "+" : "") + "$" + fmt(p);
             document.getElementById("uplPct").innerText = (m > 0 ? (p/m*100).toFixed(2) : "0") + "%";
+            document.getElementById("uplPct").className = "stat-value " + (p>=0?"profit":"loss");
         } else {
             livePriceEl.innerText = "OFFLINE";
             livePriceEl.style.color = "var(--danger)";
@@ -287,7 +327,7 @@ function initChart() {
 }
 
 function generateShareImage() {
-    if(currentTab === "SUMMARY") return alert("Pilih koin.");
+    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
     const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
     let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
     const p = (q * livePrices[currentTab]) - m, pct = m > 0 ? (p/m*100) : 0;
@@ -298,16 +338,15 @@ function generateShareImage() {
 }
 
 function exportCSV() {
-    if(currentTab === "SUMMARY") return alert("Pilih koin.");
+    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
     let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
-    data[currentTab].forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
+    (data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
     const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
 }
 
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 function togglePrivacy() { privacy = !privacy; render(); }
 
-// --- BOOT ---
 (async () => {
     await fetchPrices(); 
     await checkUser(); 
