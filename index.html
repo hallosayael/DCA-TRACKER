@@ -23,7 +23,7 @@
         .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #e2e8f0, #f8fafc); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .login-card { background: white; padding: 50px 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); text-align: center; max-width: 440px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.7); }
         
-        /* Google Button styling */
+        /* Google Button with Logo */
         .btn-google { background: #ffffff; border: 1px solid #dadce0; color: #3c4043; width: 100%; padding: 12px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-size: 16px; }
         .btn-google:hover { background: #f7f8f9; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .btn-google svg { width: 20px; height: 20px; }
@@ -52,13 +52,13 @@
         .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         
-        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom: 2px solid #F7931A; }
-        .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom: 2px solid #3c3c3d; }
-        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom: 2px solid #A464FA; }
-        .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom: 2px solid #F3BA2F; }
-        .tabs-container button.active[data-coin="SUI"] { color: #6FBCF0; border-bottom: 2px solid #6FBCF0; }
-        .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
-        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
+        .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom-color: #3c3c3d; }
+        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
+        .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom-color: #F3BA2F; }
+        .tabs-container button.active[data-coin="SUI"] { color: #6FBCF0; border-bottom-color: #6FBCF0; }
+        .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom-color: #D4AF37; }
+        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom-color: var(--primary); }
 
         .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
         .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
@@ -156,10 +156,7 @@
 
     <div class="card">
         <div class="table-wrapper" id="tableContainer">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead id="tableHead"></thead>
-                <tbody id="tabel"></tbody>
-            </table>
+            <table><thead id="tableHead"></thead><tbody id="tabel"></tbody></table>
         </div>
         <div id="emptyState" class="empty-state hidden">📊<br><span id="emptyText">Belum ada transaksi.</span></div>
     </div>
@@ -174,9 +171,10 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const assets = [
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
-    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#627EEA', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
+    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
     { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
     { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
+    { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', logo: 'https://cryptologos.cc/logos/sui-sui-logo.png' },
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://cryptologos.cc/logos/pax-gold-paxg-logo.png' }
 ];
 
@@ -254,7 +252,6 @@ function render() {
     if (currentTab === "SUMMARY") {
         tableHead.innerHTML = `<tr><th>Asset</th><th>Modal Net</th><th>Market Value</th><th>Floating P/L</th></tr>`;
         let totalModalAll = 0, totalMarketAll = 0, rows = "", hasData = false;
-
         assets.forEach(a => {
             let m = 0, q = 0; 
             data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
@@ -265,21 +262,14 @@ function render() {
                 rows += `<tr><td><b>${a.id}</b></td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td></tr>`;
             }
         });
-
-        let totalUPL = totalMarketAll - totalModalAll;
-        let totalPct = totalModalAll > 0 ? (totalUPL / totalModalAll * 100) : 0;
-
-        tbody.innerHTML = rows;
-        container.className = hasData ? "table-wrapper" : "hidden";
-        empty.className = hasData ? "hidden" : "empty-state";
+        let totalUPL = totalMarketAll - totalModalAll, totalPct = totalModalAll > 0 ? (totalUPL / totalModalAll * 100) : 0;
+        tbody.innerHTML = rows; container.className = hasData ? "table-wrapper" : "hidden"; empty.className = hasData ? "hidden" : "empty-state";
         emptyT.innerText = "Belum ada aset aktif di portofolio.";
-
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalMarketAll);
         document.getElementById("upl").innerText = privacy ? "••••" : (totalUPL >= 0 ? "+" : "") + "$" + fmt(totalUPL);
         document.getElementById("upl").className = "stat-value " + (totalUPL >= 0 ? "profit" : "loss");
         document.getElementById("uplPct").innerText = totalPct.toFixed(2) + "%";
         document.getElementById("uplPct").className = "stat-value " + (totalUPL >= 0 ? "profit" : "loss");
-
     } else {
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
         let m = 0, q = 0, rows = "";
@@ -288,30 +278,74 @@ function render() {
             m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
             rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
         });
-        tbody.innerHTML = rows;
-        container.className = currentData.length ? "table-wrapper" : "hidden";
-        empty.className = currentData.length ? "hidden" : "empty-state";
+        tbody.innerHTML = rows; container.className = currentData.length ? "table-wrapper" : "hidden"; empty.className = currentData.length ? "hidden" : "empty-state";
         emptyT.innerText = `Belum ada riwayat transaksi ${currentTab}.`;
-        
         let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m, pct = m > 0 ? (p/m*100) : 0;
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(m);
-        
         if (isApiOnline && lp > 0) {
-            livePriceEl.innerText = "$" + fmt(lp);
-            livePriceEl.style.color = "var(--primary)";
-            statusInd.classList.remove('offline');
+            livePriceEl.innerText = "$" + fmt(lp); statusInd.classList.remove('offline');
             document.getElementById("upl").innerText = privacy ? "••••" : (p >= 0 ? "+" : "") + "$" + fmt(p);
             document.getElementById("upl").className = "stat-value " + (p >= 0 ? "profit" : "loss");
             document.getElementById("uplPct").innerText = (m > 0 ? (p/m*100).toFixed(2) : "0") + "%";
             document.getElementById("uplPct").className = "stat-value " + (p >= 0 ? "profit" : "loss");
         } else {
-            livePriceEl.innerText = "OFFLINE";
-            livePriceEl.style.color = "var(--danger)";
-            statusInd.classList.add('offline');
-            document.getElementById("upl").innerText = "---";
-            document.getElementById("uplPct").innerText = "0%";
+            livePriceEl.innerText = "OFFLINE"; statusInd.classList.add('offline');
+            document.getElementById("upl").innerText = "---"; document.getElementById("uplPct").innerText = "0%";
         }
     }
+}
+
+// 📸 PROFESSIONAL SHARE IMAGE (CANVAS)
+function generateShareImage() {
+    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+    const asset = assets.find(a => a.id === currentTab);
+    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
+    let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+    const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
+    const isP = p >= 0;
+
+    // Background
+    ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
+    
+    // Header Info
+    ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 70);
+    ctx.fillStyle = "#64748b"; ctx.font = "500 18px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
+    
+    // Big PNL Percentage
+    ctx.fillStyle = isP ? "#10b981" : "#ef4444"; 
+    ctx.font = "bold 120px Inter"; 
+    ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
+    
+    // Profit/Loss Label
+    ctx.font = "bold 24px Inter";
+    ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
+
+    // Separator Line
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
+
+    // Bottom Stats
+    ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter";
+    ctx.fillText("AVG BUY", 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("ASSET", 550, 385);
+    
+    ctx.fillStyle = "white"; ctx.font = "bold 28px Inter";
+    ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
+
+    // Coin Tag (Top Right)
+    ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter";
+    ctx.textAlign = "right"; ctx.fillText(currentTab, 750, 110);
+    ctx.textAlign = "left";
+
+    // Branding Footer
+    ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
+    
+    const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
+}
+
+function exportCSV() {
+    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+    let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
+    (data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
+    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
 }
 
 async function fetchPrices() {
@@ -331,25 +365,7 @@ function initChart() {
     if (chartInstance) chartInstance.destroy();
     let labels = [], points = [], running = 0;
     data[currentTab]?.forEach(d => { labels.push(d.tanggal); running += (d.tipe === 'BUY' ? d.nominal : -d.nominal); points.push(running); });
-    chartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Investasi', data: points, borderColor: assets.find(a=>a.id===currentTab).color, fill: true, backgroundColor: 'rgba(0,0,0,0.03)', tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false } });
-}
-
-function generateShareImage() {
-    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
-    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
-    let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-    const p = (q * livePrices[currentTab]) - m, pct = m > 0 ? (p/m*100) : 0;
-    ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
-    ctx.fillStyle = p >= 0 ? "#10b981" : "#ef4444"; ctx.font = "bold 100px Inter"; ctx.fillText((p>=0?"+":"")+pct.toFixed(2)+"%", 50, 240);
-    ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${currentTab} Performance`, 50, 80);
-    const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
-}
-
-function exportCSV() {
-    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
-    let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
-    (data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
-    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
+    chartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Investasi', data: points, borderColor: assets.find(a=>a.id===currentTab).color, fill: true, backgroundColor: 'rgba(0,0,0,0.03)', tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 }
 
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
