@@ -52,11 +52,29 @@
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
         .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
-        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 5px; }
         .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
         
-        .live-indicator { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; margin-left: 5px; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        /* Live Indicator Styles */
+        .live-indicator { 
+            width: 8px; 
+            height: 8px; 
+            background-color: var(--success); 
+            border-radius: 50%; 
+            display: inline-block; 
+            animation: pulse 2s infinite; 
+        }
+        .live-indicator.offline { 
+            background-color: var(--danger); 
+            animation: none; 
+            box-shadow: none; 
+        }
+
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } 
+        }
 
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -107,7 +125,10 @@
 
     <div class="card stats-grid">
         <div class="stat-item"><div class="stat-label">Investasi</div><div class="stat-value" id="totalModal">0</div></div>
-        <div class="stat-item"><div class="stat-label">Live Price <span class="live-indicator"></span></div><div class="stat-value" id="livePrice" style="color:var(--primary)">0</div></div>
+        <div class="stat-item">
+            <div class="stat-label">Live Price <span id="liveStatus" class="live-indicator"></span></div>
+            <div class="stat-value" id="livePrice" style="color:var(--primary)">0</div>
+        </div>
         <div class="stat-item"><div class="stat-label">P/L ($)</div><div class="stat-value" id="upl">0</div></div>
         <div class="stat-item" style="border-left:4px solid var(--primary)"><div class="stat-label">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
@@ -228,19 +249,18 @@ function render() {
         tbody.innerHTML = rows;
         let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m;
         document.getElementById("totalModal").innerText = privacy?"••••":"$"+fmt(m);
-        document.getElementById("livePrice").innerText = "$"+fmt(lp);
+        document.getElementById("livePrice").innerText = lp > 0 ? "$"+fmt(lp) : "OFFLINE";
         document.getElementById("upl").innerText = privacy?"••••":"$"+fmt(p);
         document.getElementById("uplPct").innerText = (m>0?(p/m*100).toFixed(2):"0")+"%";
     }
 }
 
-// 📸 SHARE PNL FUNCTION
+// SHARE & EXPORT
 function generateShareImage() {
     if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
     const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
     let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
     const p = (q * livePrices[currentTab]) - m, pct = m > 0 ? (p/m*100) : 0;
-    
     ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
     ctx.fillStyle = p >= 0 ? "#10b981" : "#ef4444"; ctx.font = "bold 100px Inter"; ctx.fillText((p>=0?"+":"")+pct.toFixed(2)+"%", 50, 240);
     ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${currentTab} Performance`, 50, 80);
@@ -248,7 +268,6 @@ function generateShareImage() {
     const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
 }
 
-// 📊 EXCEL EXPORT FUNCTION
 function exportCSV() {
     if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
     let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
@@ -267,14 +286,25 @@ function initChart() {
 
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 function togglePrivacy() { privacy = !privacy; render(); }
+
+// LIVE INDICATOR LOGIC
 async function fetchPrices() {
     const ids = assets.map(a => a.geckoId).join(',');
+    const indicator = document.getElementById('liveStatus');
     try {
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+        if (!res.ok) throw new Error("API Down");
         const json = await res.json();
         assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
+        
+        // ONLINE: Hijau dan berdenyut
+        if(indicator) indicator.classList.remove('offline');
         render();
-    } catch(e) {}
+    } catch(e) {
+        console.warn("Koneksi gagal atau limit API tercapai.");
+        // OFFLINE: Merah dan diam
+        if(indicator) indicator.classList.add('offline');
+    }
 }
 
 (async () => { await fetchPrices(); await checkUser(); setInterval(fetchPrices, 60000); })();
