@@ -252,48 +252,48 @@ function render() {
     
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-    if (currentTab === "SUMMARY") {
+if (currentTab === "SUMMARY") {
         tableHead.innerHTML = `<tr><th>Asset</th><th>Modal Net</th><th>Market Value</th><th>Floating P/L</th></tr>`;
-        let totalVal = 0, rows = "", hasData = false;
+        
+        let totalModalAll = 0;   // Akumulasi semua modal
+        let totalMarketAll = 0;  // Akumulasi semua market value
+        let rows = "";
+        let hasData = false;
+
         assets.forEach(a => {
-            let m = 0, q = 0; data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+            let m = 0, q = 0; 
+            data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+            
             if (q > 0.00000001) {
                 hasData = true;
-                let lp = livePrices[a.id] || 0, v = q * lp, p = v - m; totalVal += v;
-                rows += `<tr><td><b>${a.id}</b></td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':'$'+fmt(p)}</td></tr>`;
+                let lp = livePrices[a.id] || 0;
+                let v = q * lp;
+                let p = v - m;
+
+                // Tambahkan ke akumulasi total
+                totalModalAll += m;
+                totalMarketAll += v;
+
+                rows += `<tr><td><b>${a.id}</b></td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td></tr>`;
             }
         });
+
+        // Hitung total profit loss untuk Summary
+        let totalUPL = totalMarketAll - totalModalAll;
+        let totalPct = totalModalAll > 0 ? (totalUPL / totalModalAll * 100) : 0;
+
         tbody.innerHTML = rows;
         container.className = hasData ? "table-wrapper" : "hidden";
         empty.className = hasData ? "hidden" : "empty-state";
-        emptyT.innerText = "Belum ada aset aktif di portofolio Anda.";
-        document.getElementById("totalModal").innerText = privacy?"••••":"$"+fmt(totalVal);
-        document.getElementById("upl").innerText = "---";
-        document.getElementById("uplPct").innerText = "---";
+        
+        // UPDATE STATISTIK ATAS (SUMMARY)
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalMarketAll); // Total Market Value
+        document.getElementById("upl").innerText = privacy ? "••••" : (totalUPL >= 0 ? "+" : "") + "$" + fmt(totalUPL);
+        document.getElementById("upl").className = "stat-value " + (totalUPL >= 0 ? "profit" : "loss");
+        document.getElementById("uplPct").innerText = totalPct.toFixed(2) + "%";
+        document.getElementById("uplPct").className = "stat-value " + (totalUPL >= 0 ? "profit" : "loss");
+
     } else {
-        tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
-        let m = 0, q = 0, rows = "";
-        const currentData = data[currentTab] || [];
-        currentData.forEach(d => {
-            m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
-            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
-        });
-        tbody.innerHTML = rows;
-        container.className = currentData.length ? "table-wrapper" : "hidden";
-        empty.className = currentData.length ? "hidden" : "empty-state";
-        emptyT.innerText = `Belum ada riwayat transaksi ${currentTab}. Klik Simpan ke Cloud untuk mencatat.`;
-        
-        let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m;
-        document.getElementById("totalModal").innerText = privacy?"••••":"$"+fmt(m);
-        
-        if (isApiOnline && lp > 0) {
-            livePriceEl.innerText = "$" + fmt(lp);
-            livePriceEl.style.color = "var(--primary)";
-            statusInd.classList.remove('offline');
-            document.getElementById("upl").innerText = privacy ? "••••" : (p >= 0 ? "+" : "") + "$" + fmt(p);
-            document.getElementById("uplPct").innerText = (m > 0 ? (p/m*100).toFixed(2) : "0") + "%";
-            document.getElementById("uplPct").className = "stat-value " + (p>=0?"profit":"loss");
-        } else {
             livePriceEl.innerText = "OFFLINE";
             livePriceEl.style.color = "var(--danger)";
             statusInd.classList.add('offline');
