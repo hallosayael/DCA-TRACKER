@@ -35,22 +35,34 @@
         }
         .tabs-container::-webkit-scrollbar { display: none; }
 
-        .tabs-container button {
-            flex: 0 0 auto;
-            padding: 10px 20px;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            background: transparent;
-            cursor: pointer;
-            color: var(--text-muted);
-            white-space: nowrap;
-        }
-        .tabs-container button.active {
-            background: var(--card);
-            color: var(--primary);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
+/* Update gaya tab agar lebih interaktif */
+.tabs-container button {
+    flex: 0 0 auto;
+    padding: 10px 20px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-muted);
+    white-space: nowrap;
+    border: 2px solid transparent; /* Tambahan agar ukuran tidak lompat saat aktif */
+}
+
+/* Tab Aktif secara umum */
+.tabs-container button.active {
+    background: var(--card);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Warna spesifik untuk tiap koin saat aktif */
+.tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom: 2px solid #F7931A; }
+.tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom: 2px solid #3c3c3d; }
+.tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom: 2px solid #A464FA; }
+.tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom: 2px solid #F3BA2F; }
+.tabs-container button.active[data-coin="SUI"] { color: #6FBCF0; border-bottom: 2px solid #6FBCF0; }
+.tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
+.tabs-container button.active[data-coin="OVERALL"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
         
@@ -153,10 +165,22 @@ assets.forEach(asset => {
 
 function renderTabs() {
     const container = document.getElementById('menuTabs');
-    let html = `<button class="${currentTab === 'OVERALL' ? 'active' : ''}" onclick="switchTab('OVERALL')">OVERALL</button>`;
+    let html = `
+        <button class="${currentTab === 'OVERALL' ? 'active' : ''}" 
+                data-coin="OVERALL" 
+                onclick="switchTab('OVERALL')">
+            OVERALL
+        </button>
+    `;
+    
     html += assets.map(asset => `
-        <button class="${currentTab === asset.id ? 'active' : ''}" onclick="switchTab('${asset.id}')">${asset.id}</button>
+        <button class="${currentTab === asset.id ? 'active' : ''}" 
+                data-coin="${asset.id}" 
+                onclick="switchTab('${asset.id}')">
+            ${asset.id}
+        </button>
     `).join('');
+    
     container.innerHTML = html;
 }
 
