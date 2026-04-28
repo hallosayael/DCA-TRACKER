@@ -52,10 +52,13 @@
         .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         
-        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
-        .tabs-container button.active[data-coin="ETH"] { color: #627EEA; border-bottom-color: #627EEA; }
-        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
-        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom-color: var(--primary); }
+        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom: 2px solid #F7931A; }
+        .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom: 2px solid #3c3c3d; }
+        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom: 2px solid #A464FA; }
+        .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom: 2px solid #F3BA2F; }
+        .tabs-container button.active[data-coin="SUI"] { color: #6FBCF0; border-bottom: 2px solid #6FBCF0; }
+        .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
+        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
         .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
         .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
