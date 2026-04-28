@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DCA Tracker Pro - Cloud Sync Full</title>
+    <title>DCA Tracker Pro - Cloud Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -25,7 +25,7 @@
         .btn-google { background: #ffffff; border: 1px solid #dadce0; color: #3c4043; width: 100%; padding: 14px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-size: 16px; }
 
         /* Custom Modal Professional */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card { background: white; padding: 32px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; transform: translateY(20px); transition: 0.3s; }
         .modal-overlay.active .modal-card { transform: translateY(0); }
@@ -34,42 +34,30 @@
         .modal-btns { display: flex; gap: 12px; }
         .btn-modal { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; }
 
-        /* App UI */
-        .user-profile { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 12px 18px; background: white; border-radius: 16px; border: 1px solid var(--border); }
-        .logout-link { color: var(--danger); font-size: 12px; cursor: pointer; font-weight: 700; text-transform: uppercase; }
-        h2 { font-weight: 800; text-align: center; margin-bottom: 25px; letter-spacing: -0.025em; }
-
         /* Tabs with Brand Colors */
         .tabs-container { overflow-x: auto; display: flex; background: #e2e8f0; padding: 6px; border-radius: 16px; margin-bottom: 20px; scrollbar-width: none; }
         .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        
         .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
         .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom-color: #3c3c3d; }
         .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
-        .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom-color: #F3BA2F; }
-        .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom-color: #D4AF37; }
         .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom-color: var(--primary); }
 
         .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
         .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
-        
         .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
         label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
         input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
-        
         .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; position: relative; z-index: 1; }
-        .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; }
+        .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; font-size: 15px; }
         .btn-action { background: #f1f5f9; color: var(--text-main); flex: 1; padding: 14px; cursor: pointer; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-share { background: #0f172a; color: white; border: none; }
-
+        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
         .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
         .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 5px; }
         .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
-        
-        /* Indicator Logic */
-        .live-indicator { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+
+        .live-indicator { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
         .live-indicator.offline { background-color: var(--danger); animation: none !important; box-shadow: none !important; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
@@ -79,9 +67,7 @@
         .profit { color: var(--success); } .loss { color: var(--danger); }
         .hidden { display: none !important; }
         #shareCanvas { display: none; }
-
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-state-icon { font-size: 48px; margin-bottom: 15px; display: block; opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -89,7 +75,7 @@
 <div id="confirmModal" class="modal-overlay">
     <div class="modal-card">
         <h4>Konfirmasi Hapus</h4>
-        <p>Apakah Anda yakin ingin menghapus data transaksi ini secara permanen dari cloud?</p>
+        <p>Apakah Anda yakin ingin menghapus data transaksi ini secara permanen?</p>
         <div class="modal-btns">
             <button class="btn-modal" style="background:#f1f5f9" onclick="closeModal()">Batal</button>
             <button class="btn-modal" style="background:var(--danger); color:white" id="confirmDeleteBtn">Hapus Data</button>
@@ -101,9 +87,8 @@
     <div class="login-card">
         <div style="font-size: 56px; margin-bottom: 24px;">🚀</div>
         <h3>DCA Tracker Pro</h3>
-        <p>Akses dashboard investasi cerdas Anda. Semua data tersinkronisasi aman di cloud.</p>
+        <p>Akses dashboard investasi cloud Anda.</p>
         <button class="btn-google" onclick="login()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
             Masuk dengan Google
         </button>
     </div>
@@ -111,7 +96,7 @@
 
 <div id="appScreen" class="container hidden">
     <div class="user-profile">
-        <div style="font-size:13px; font-weight:500;">User: <span id="userEmail" style="color:var(--primary); font-weight:700;">...</span></div>
+        <div style="font-size:13px;">User: <span id="userEmail" style="color:var(--primary); font-weight:700;">...</span></div>
         <div class="logout-link" onclick="logout()">Logout</div>
     </div>
 
@@ -123,12 +108,12 @@
         <div class="grid-inputs">
             <div><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
             <div><label>Tanggal</label><input type="date" id="tanggal"></div>
-            <div><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00" step="any"></div>
-            <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00" step="any"></div>
+            <div><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00"></div>
+            <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
         </div>
         <div class="btn-group">
             <button class="btn-primary" onclick="tambah()">Simpan ke Cloud</button>
-            <button class="btn-action btn-share" onclick="generateShareImage()">📸 Share</button>
+            <button class="btn-action" onclick="generateShareImage()">📸 Share</button>
             <button class="btn-action" onclick="exportCSV()">📊 Excel</button>
             <button class="btn-action" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
         </div>
@@ -144,21 +129,13 @@
         <div class="stat-item" style="border-left:4px solid var(--primary)"><div class="stat-label">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
 
-    <div class="card" id="chartCard" style="height: 300px;">
-        <canvas id="performanceChart"></canvas>
-    </div>
+    <div class="card" id="chartCard" style="height: 300px;"><canvas id="performanceChart"></canvas></div>
 
     <div class="card">
         <div class="table-wrapper" id="tableContainer">
-            <table id="mainTable">
-                <thead id="tableHead"></thead>
-                <tbody id="tabel"></tbody>
-            </table>
+            <table><thead id="tableHead"></thead><tbody id="tabel"></tbody></table>
         </div>
-        <div id="emptyState" class="empty-state hidden">
-            <span class="empty-state-icon">📊</span>
-            <div id="emptyText">Belum ada transaksi di cloud.</div>
-        </div>
+        <div id="emptyState" class="empty-state hidden">📊<br>Belum ada transaksi di cloud.</div>
     </div>
 </div>
 
@@ -179,7 +156,7 @@ const assets = [
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
 
-// --- AUTH ---
+// AUTH
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     if (user) {
@@ -188,18 +165,16 @@ async function checkUser() {
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('appScreen').classList.remove('hidden');
         renderTabs(); switchTab("SUMMARY"); loadData();
-    } else {
-        document.getElementById('authScreen').classList.remove('hidden');
-    }
+    } else { document.getElementById('authScreen').classList.remove('hidden'); }
 }
 async function login() { await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
 async function logout() { await _supabase.auth.signOut(); location.reload(); }
 
-// --- DATA ---
+// DATA
 async function loadData() {
     if (!currentUser) return;
     const { data: dbData } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
-    assets.forEach(a => { data[a.id] = []; });
+    assets.forEach(a => data[a.id] = []);
     dbData?.forEach(item => { if (data[item.asset_id]) data[item.asset_id].push(item); });
     render();
 }
@@ -208,26 +183,25 @@ async function tambah() {
     const tipe = document.getElementById("tipe").value, tgl = document.getElementById("tanggal").value;
     const harga = Number(document.getElementById("harga").value), nominal = Number(document.getElementById("nominal").value);
     if(!tgl || !harga || !nominal) return alert("Lengkapi data!");
-    let curQ = (data[currentTab] || []).reduce((a, b) => a + b.qty, 0), qInput = nominal/harga;
-    if(tipe === "SELL" && qInput > (curQ + 0.00000001)) return alert("Saldo tidak cukup!");
-    await _supabase.from('transaksi').insert([{ user_id: currentUser.id, asset_id: currentTab, tipe, tanggal: tgl, harga, nominal, qty: tipe === "BUY" ? qInput : -qInput }]);
+    let curQ = (data[currentTab] || []).reduce((a, b) => a + b.qty, 0);
+    let qtyIn = nominal/harga;
+    if(tipe === "SELL" && qtyIn > (curQ + 0.00000001)) return alert("Saldo tidak cukup!");
+    await _supabase.from('transaksi').insert([{ user_id: currentUser.id, asset_id: currentTab, tipe, tanggal: tgl, harga, nominal, qty: tipe === "BUY" ? qtyIn : -qtyIn }]);
     loadData(); document.getElementById("harga").value = ""; document.getElementById("nominal").value = "";
 }
 
-// --- CUSTOM MODAL LOGIC ---
+// MODAL
 function openModal(id) {
     const modal = document.getElementById('confirmModal');
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
     modal.classList.add('active');
-    confirmBtn.onclick = async () => {
+    document.getElementById('confirmDeleteBtn').onclick = async () => {
         await _supabase.from('transaksi').delete().eq('id', id);
-        closeModal();
-        loadData();
+        closeModal(); loadData();
     };
 }
 function closeModal() { document.getElementById('confirmModal').classList.remove('active'); }
 
-// --- UI RENDER ---
+// UI
 function renderTabs() {
     const container = document.getElementById('menuTabs');
     let html = `<button class="${currentTab === 'SUMMARY' ? 'active' : ''}" data-coin="SUMMARY" onclick="switchTab('SUMMARY')">SUMMARY</button>`;
@@ -246,75 +220,60 @@ function switchTab(id) {
 
 function render() {
     const tbody = document.getElementById("tabel"), tableHead = document.getElementById("tableHead");
-    const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState"), emptyT = document.getElementById("emptyText");
-    const livePriceEl = document.getElementById("livePrice");
-    const statusInd = document.getElementById("liveStatus");
-    
+    const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState");
+    const livePriceEl = document.getElementById("livePrice"), statusInd = document.getElementById("liveStatus");
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-if (currentTab === "SUMMARY") {
+    if (currentTab === "SUMMARY") {
         tableHead.innerHTML = `<tr><th>Asset</th><th>Modal Net</th><th>Market Value</th><th>Floating P/L</th></tr>`;
-        
-        let totalModalAll = 0;   // Akumulasi semua modal
-        let totalMarketAll = 0;  // Akumulasi semua market value
-        let rows = "";
-        let hasData = false;
-
+        let tModal = 0, tMarket = 0, rows = "", hasD = false;
         assets.forEach(a => {
-            let m = 0, q = 0; 
-            data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-            
+            let m = 0, q = 0; data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
             if (q > 0.00000001) {
-                hasData = true;
-                let lp = livePrices[a.id] || 0;
-                let v = q * lp;
-                let p = v - m;
-
-                // Tambahkan ke akumulasi total
-                totalModalAll += m;
-                totalMarketAll += v;
-
+                hasD = true; let lp = livePrices[a.id] || 0, v = q * lp, p = v - m;
+                tModal += m; tMarket += v;
                 rows += `<tr><td><b>${a.id}</b></td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td></tr>`;
             }
         });
-
-        // Hitung total profit loss untuk Summary
-        let totalUPL = totalMarketAll - totalModalAll;
-        let totalPct = totalModalAll > 0 ? (totalUPL / totalModalAll * 100) : 0;
-
-        tbody.innerHTML = rows;
-        container.className = hasData ? "table-wrapper" : "hidden";
-        empty.className = hasData ? "hidden" : "empty-state";
-        
-        // UPDATE STATISTIK ATAS (SUMMARY)
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalMarketAll); // Total Market Value
-        document.getElementById("upl").innerText = privacy ? "••••" : (totalUPL >= 0 ? "+" : "") + "$" + fmt(totalUPL);
-        document.getElementById("upl").className = "stat-value " + (totalUPL >= 0 ? "profit" : "loss");
-        document.getElementById("uplPct").innerText = totalPct.toFixed(2) + "%";
-        document.getElementById("uplPct").className = "stat-value " + (totalUPL >= 0 ? "profit" : "loss");
-
+        let tUPL = tMarket - tModal, tPct = tModal > 0 ? (tUPL/tModal*100) : 0;
+        tbody.innerHTML = rows; container.className = hasD ? "table-wrapper" : "hidden"; empty.className = hasD ? "hidden" : "empty-state";
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(tMarket);
+        document.getElementById("upl").innerText = privacy ? "••••" : (tUPL>=0?"+":"") + "$" + fmt(tUPL);
+        document.getElementById("upl").className = "stat-value " + (tUPL>=0?"profit":"loss");
+        document.getElementById("uplPct").innerText = tPct.toFixed(2) + "%";
+        document.getElementById("uplPct").className = "stat-value " + (tUPL>=0?"profit":"loss");
     } else {
-            livePriceEl.innerText = "OFFLINE";
-            livePriceEl.style.color = "var(--danger)";
-            statusInd.classList.add('offline');
-            document.getElementById("upl").innerText = "---";
-            document.getElementById("uplPct").innerText = "0%";
+        tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
+        let m = 0, q = 0, rows = "";
+        (data[currentTab] || []).forEach(d => {
+            m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
+            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
+        });
+        tbody.innerHTML = rows; container.className = (data[currentTab]||[]).length ? "table-wrapper" : "hidden"; empty.className = (data[currentTab]||[]).length ? "hidden" : "empty-state";
+        let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m, pct = m > 0 ? (p/m*100) : 0;
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(m);
+        if (isApiOnline && lp > 0) {
+            livePriceEl.innerText = "$" + fmt(lp); statusInd.classList.remove('offline');
+            document.getElementById("upl").innerText = privacy ? "••••" : (p>=0?"+":"") + "$" + fmt(p);
+            document.getElementById("uplPct").innerText = pct.toFixed(2) + "%";
+            document.getElementById("uplPct").className = "stat-value " + (p>=0?"profit":"loss");
+            document.getElementById("upl").className = "stat-value " + (p>=0?"profit":"loss");
+        } else {
+            livePriceEl.innerText = "OFFLINE"; statusInd.classList.add('offline');
+            document.getElementById("upl").innerText = "---"; document.getElementById("uplPct").innerText = "0%";
         }
     }
 }
 
-// --- COINGECKO API ---
 async function fetchPrices() {
-    const ids = assets.map(a => a.geckoId).join(',');
     try {
+        const ids = assets.map(a => a.geckoId).join(',');
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
         if (!res.ok) throw new Error();
         const json = await res.json();
         assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
         isApiOnline = true;
-    } catch(e) {
-        isApiOnline = false;
-    }
+    } catch(e) { isApiOnline = false; }
     render();
 }
 
@@ -346,12 +305,7 @@ function exportCSV() {
 
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 function togglePrivacy() { privacy = !privacy; render(); }
-
-(async () => {
-    await fetchPrices(); 
-    await checkUser(); 
-    setInterval(fetchPrices, 60000); 
-})();
+(async () => { await fetchPrices(); await checkUser(); setInterval(fetchPrices, 60000); })();
 </script>
 </body>
 </html>
