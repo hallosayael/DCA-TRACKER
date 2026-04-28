@@ -309,7 +309,7 @@ function generateShareImage() {
             ctx.drawImage(img, 650, 40, 100, 100);
             ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110);
         } else {
-            ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${asset.icon} ${currentTab}`, 750, 110);
+            ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab} ${asset.icon}`, 750, 110);
         }
         ctx.textAlign = "left";
         ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
