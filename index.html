@@ -52,7 +52,7 @@
         .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         
-        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
+        .tabs-container button.active[data-coin="₿ BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
         .tabs-container button.active[data-coin="ETH"] { color: #3c3c3d; border-bottom-color: #3c3c3d; }
         .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
         .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom-color: #F3BA2F; }
@@ -170,7 +170,7 @@ const SUPABASE_KEY = 'sb_publishable_-26nDiKXaT6IkPJiTplAdQ_CV5H-MHm';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const assets = [
-    { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
+    { id: 'BTC', name: '₿ Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
     { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
     { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
     { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
