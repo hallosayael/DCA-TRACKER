@@ -244,16 +244,38 @@ function render() {
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
     if (currentTab === "SUMMARY") {
-        tableHead.innerHTML = `<tr><th>Asset</th><th>Modal Net</th><th>Market Value</th><th>Floating P/L</th></tr>`;
+        // MENAMBAHKAN KOLOM AVG PRICE DAN QTY DI SINI
+        tableHead.innerHTML = `<tr><th>Asset</th><th>Avg. Price</th><th>Total Qty</th><th>Modal Net</th><th>Market Value</th><th>Floating P/L</th></tr>`;
         let totalM = 0, totalV = 0, rows = "", hasD = false;
+        
         assets.forEach(a => {
-            let m = 0, q = 0; data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+            let m = 0, q = 0; 
+            data[a.id]?.forEach(d => { 
+                m += d.tipe === 'BUY' ? d.nominal : -d.nominal; 
+                q += d.qty; 
+            });
+
             if (q > 0.00000001) {
-                hasD = true; let lp = livePrices[a.id] || 0, v = q * lp, p = v - m;
-                totalM += m; totalV += v;
-                rows += `<tr><td><b>${a.id}</b></td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td></tr>`;
+                hasD = true; 
+                let lp = livePrices[a.id] || 0;
+                let v = q * lp;
+                let p = v - m;
+                let avg = m / q; // Menghitung Rata-rata harga beli
+
+                totalM += m; 
+                totalV += v;
+                
+                rows += `<tr>
+                    <td><b>${a.id}</b></td>
+                    <td>$${fmt(avg)}</td>
+                    <td>${q.toFixed(6)}</td>
+                    <td>${privacy?'••':'$'+fmt(m)}</td>
+                    <td>${privacy?'••':'$'+fmt(v)}</td>
+                    <td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td>
+                </tr>`;
             }
         });
+        
         let tUPL = totalV - totalM, tPct = totalM > 0 ? (tUPL/totalM*100) : 0;
         tbody.innerHTML = rows; container.className = hasD ? "table-wrapper" : "hidden"; empty.className = hasD ? "hidden" : "empty-state";
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
@@ -292,7 +314,6 @@ function generateShareImage() {
     const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
     const isP = p >= 0;
 
-    // Draw Function
     const draw = (img = null) => {
         ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
         ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 70);
@@ -303,7 +324,6 @@ function generateShareImage() {
         ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText("AVG BUY", 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("ASSET", 550, 385);
         ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
 
-        // Logo & Icon Logic
         ctx.textAlign = "right";
         if (img) {
             ctx.drawImage(img, 650, 40, 100, 100);
