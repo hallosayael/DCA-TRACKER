@@ -337,7 +337,7 @@ function render() {
     
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-    if (currentTab === "SUMMARY") {
+      if (currentTab === "SUMMARY") {
         summaryArea.classList.remove('hidden');
         let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
 
@@ -368,15 +368,15 @@ function render() {
                         </div>
                         <div>
                             <div class="asset-label">Market Value</div>
-                            <div class="asset-val">${privacy ? '••' : '$' + fmt(v)}</div>
+                            <div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div>
                         </div>
                         <div>
                             <div class="asset-label">Quantity</div>
-                            <div class="asset-val">${q.toFixed(4)}</div>
+                            <div class="asset-val">${privacy ? '••••' : q.toFixed(4)}</div>
                         </div>
                         <div>
                             <div class="asset-label">Profit/Loss</div>
-                            <div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div>
+                            <div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div>
                         </div>
                     </div>
                     <img src="${a.logo}" class="asset-bg-logo">
