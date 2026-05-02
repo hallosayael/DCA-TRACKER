@@ -64,7 +64,8 @@
         /* Input & Buttons */
         input, select { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); padding: 12px; border-radius: 10px; width: 100%; }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; }
-        .btn-action { background: var(--border); color: var(--text-main); border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: 600; flex: 1; font-size: 12px; }
+        .btn-action { background: var(--border); color: var(--text-main); border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 700; flex: 1; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-action:hover { background: var(--primary); color: white; }
 
         /* Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; transition: 0.3s; }
@@ -76,6 +77,7 @@
         
         .coin-bg-icon { position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 150px; opacity: 0.1; filter: grayscale(1); pointer-events: none; }
         .hidden { display: none !important; }
+        #shareCanvas { display: none; }
     </style>
 </head>
 <body>
@@ -130,10 +132,14 @@
             <div><label style="font-size:10px">HARGA ($)</label><input type="number" id="harga" placeholder="0.00"></div>
             <div><label style="font-size:10px">NOMINAL ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
         </div>
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn-primary" onclick="tambah()" style="flex:2">SIMPAN KE CLOUD</button>
-            <button class="btn-action" onclick="openCalc()">🧮 CALC</button>
-            <button class="btn-action" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
+        <div style="display:flex; flex-wrap: wrap; gap:10px; margin-top:15px;">
+            <button class="btn-primary" onclick="tambah()" style="flex: 2 1 200px;">SIMPAN KE CLOUD</button>
+            <div style="display:flex; gap:10px; flex: 1 1 300px;">
+                <button class="btn-action" onclick="openCalc()">🧮 CALC</button>
+                <button class="btn-action" onclick="generateShareImage()">📸 SHARE</button>
+                <button class="btn-action" onclick="exportCSV()">📊 EXCEL</button>
+                <button class="btn-action" onclick="togglePrivacy()" id="privacyBtn" style="flex: 0 0 auto; width: 45px;">🔒</button>
+            </div>
         </div>
     </div>
 
@@ -153,6 +159,8 @@
     </div>
 </div>
 
+<canvas id="shareCanvas" width="800" height="450"></canvas>
+
 <script>
 const SUPABASE_URL = 'https://iuqzuuyihrnangontxft.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-26nDiKXaT6IkPJiTplAdQ_CV5H-MHm';
@@ -169,7 +177,6 @@ const assets = [
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null;
 
-// UI Logic
 function toggleDarkMode() {
     const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', theme);
@@ -178,7 +185,7 @@ function toggleDarkMode() {
 }
 
 function openCalc() {
-    if (currentTab === "SUMMARY") return alert("Pilih koin dulu.");
+    if (currentTab === "SUMMARY") return alert("Pilih satu koin dulu.");
     document.getElementById('calcModal').classList.add('active');
     let m = 0, q = 0;
     data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
@@ -203,12 +210,22 @@ function calculateDCA() {
     }
 }
 
-// Data Logic
 async function loadData() {
     const { data: dbData } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
     assets.forEach(a => data[a.id] = []);
     dbData?.forEach(item => { if (data[item.asset_id]) data[item.asset_id].push(item); });
     render();
+}
+
+async function tambah() {
+    const tipe = document.getElementById("tipe").value, tgl = document.getElementById("tanggal").value;
+    const harga = Number(document.getElementById("harga").value), nominal = Number(document.getElementById("nominal").value);
+    if(!tgl || !harga || !nominal) return alert("Lengkapi data!");
+    let curQ = (data[currentTab] || []).reduce((a, b) => a + b.qty, 0);
+    let qtyIn = nominal/harga;
+    if(tipe === "SELL" && qtyIn > (curQ + 0.00000001)) return alert("Saldo tidak cukup!");
+    await _supabase.from('transaksi').insert([{ user_id: currentUser.id, asset_id: currentTab, tipe, tanggal: tgl, harga, nominal, qty: tipe === "BUY" ? qtyIn : -qtyIn }]);
+    loadData(); document.getElementById("harga").value = ""; document.getElementById("nominal").value = "";
 }
 
 function renderTabs() {
@@ -268,7 +285,49 @@ function render() {
     }
 }
 
-// Helpers
+function generateShareImage() {
+    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+    const asset = assets.find(a => a.id === currentTab);
+    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
+    let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+    const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
+    const isP = p >= 0;
+
+    const draw = (img = null) => {
+        ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
+        ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 70);
+        ctx.fillStyle = "#64748b"; ctx.font = "500 18px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
+        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 120px Inter"; ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
+        ctx.font = "bold 24px Inter"; ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
+        ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
+        ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText("AVG BUY", 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("ASSET", 550, 385);
+        ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
+
+        ctx.textAlign = "right";
+        if (img) {
+            ctx.drawImage(img, 650, 40, 100, 100);
+            ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110);
+        } else {
+            ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab} ${asset.icon || ''}`, 750, 110);
+        }
+        ctx.textAlign = "left";
+        const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
+    };
+
+    const logoImg = new Image();
+    logoImg.crossOrigin = "anonymous";
+    logoImg.onload = () => draw(logoImg);
+    logoImg.onerror = () => draw();
+    logoImg.src = asset.logo;
+}
+
+function exportCSV() {
+    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+    let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
+    (data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
+    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
+}
+
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     if (user) { currentUser = user; document.getElementById('userEmail').innerText = user.email; loadData(); renderTabs(); switchTab("SUMMARY"); }
