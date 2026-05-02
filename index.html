@@ -50,6 +50,7 @@
         .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
 
+        /* Coin Colors */
         .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
         .tabs-container button.active[data-coin="ETH"] { color: #4b4b4b; border-bottom-color: #4b4b4b; }
         .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
@@ -60,6 +61,23 @@
 
         .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
         .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
+
+        /* Card Design for Summary Assets */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 10px; }
+        .asset-card { background: white; border-radius: 20px; padding: 20px; border: 1px solid var(--border); position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); }
+        .asset-header { display: flex; justify-content: space-between; align-items: center; z-index: 1; }
+        .asset-name-box { display: flex; align-items: center; gap: 10px; }
+        .asset-logo-sm { width: 32px; height: 32px; border-radius: 50%; }
+        .asset-symbol { font-weight: 800; font-size: 18px; }
+        .asset-pl-badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+        .pl-profit { background: #dcfce7; color: var(--success); }
+        .pl-loss { background: #fee2e2; color: var(--danger); }
+        
+        .asset-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; z-index: 1; }
+        .asset-label { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .asset-val { font-size: 14px; font-weight: 700; }
+        .asset-bg-logo { position: absolute; right: -15px; bottom: -15px; width: 100px; opacity: 0.05; filter: grayscale(1); pointer-events: none; }
 
         .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
         label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
@@ -86,7 +104,6 @@
         #shareCanvas { display: none; }
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
 
-        /* Calculator Styles */
         .calc-box { background: #f1f5f9; border-radius: 16px; padding: 20px; margin-top: 20px; text-align: left; }
         .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .calc-res { background: var(--primary); color: white; padding: 15px; border-radius: 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
@@ -192,7 +209,9 @@
 
     <div class="card" id="chartCard" style="height: 300px;"><canvas id="performanceChart"></canvas></div>
 
-    <div class="card">
+    <div id="summaryArea" class="summary-grid"></div>
+
+    <div class="card" id="tableCard">
         <div class="table-wrapper" id="tableContainer">
             <table><thead id="tableHead"></thead><tbody id="tabel"></tbody></table>
         </div>
@@ -212,13 +231,12 @@ const assets = [
     { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png' },
     { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png' },
     { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
-    { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', icon: '💧' },
+    { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', logo: 'https://cryptologos.cc/logos/sui-sui-logo.png' },
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/paxg.png' }
 ];
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
 
-// Fungsi-fungsi Calculator
 function openCalc() {
     if (currentTab === "SUMMARY") return alert("Pilih satu koin dulu di menu tab.");
     document.getElementById('calcModal').classList.add('active');
@@ -234,17 +252,14 @@ function closeCalc() { document.getElementById('calcModal').classList.remove('ac
 function calculateDCA() {
     let m = 0, q = 0;
     data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-    
     const oldAvg = m/q || 0;
     const newNominal = Number(document.getElementById('calcNominal').value) || 0;
     const newPrice = Number(document.getElementById('calcPrice').value) || 0;
-    
     if (newPrice > 0) {
         const newQty = newNominal / newPrice;
         const totalM = m + newNominal;
         const totalQ = q + newQty;
         const newAvg = totalM / totalQ;
-        
         document.getElementById('resAvg').innerText = "$" + fmt(newAvg);
         const diff = ((newAvg - oldAvg) / oldAvg * 100);
         if (oldAvg > 0) {
@@ -307,8 +322,9 @@ function switchTab(id) {
     currentTab = id; renderTabs();
     document.getElementById("inputCard").className = id === "SUMMARY" ? "card hidden" : "card";
     document.getElementById("chartCard").className = id === "SUMMARY" ? "card hidden" : "card";
+    document.getElementById("tableCard").className = id === "SUMMARY" ? "card hidden" : "card";
     document.getElementById("livePriceContainer").className = id === "SUMMARY" ? "stat-item hidden" : "stat-item";
-    document.getElementById("labelTotal").innerText = id === "SUMMARY" ? "Market Value" : "Net Investasi";
+    document.getElementById("labelTotal").innerText = id === "SUMMARY" ? "Portfolio Value" : "Net Investasi";
     if (id !== "SUMMARY") { document.getElementById("coinIcon").src = assets.find(a => a.id === id).logo; setTimeout(initChart, 100); }
     render();
 }
@@ -316,37 +332,81 @@ function switchTab(id) {
 function render() {
     const tbody = document.getElementById("tabel"), tableHead = document.getElementById("tableHead");
     const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState");
+    const summaryArea = document.getElementById("summaryArea");
     const livePriceEl = document.getElementById("livePrice"), statusInd = document.getElementById("liveStatus");
+    
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
     if (currentTab === "SUMMARY") {
-        tableHead.innerHTML = `<tr><th>Asset</th><th>Avg. Price</th><th>Total Qty</th><th>Modal Net</th><th>Market Value</th><th>Floating P/L</th></tr>`;
-        let totalM = 0, totalV = 0, rows = "", hasD = false;
+        summaryArea.classList.remove('hidden');
+        let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
+
         assets.forEach(a => {
             let m = 0, q = 0; 
             data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+            
             if (q > 0.00000001) {
                 hasD = true; 
-                let lp = livePrices[a.id] || 0, v = q * lp, p = v - m, avg = m / q;
+                let lp = livePrices[a.id] || 0, v = q * lp, p = v - m, avg = m / q, pPct = (p/m*100);
                 totalM += m; totalV += v;
-                rows += `<tr><td><b>${a.id}</b></td><td>$${fmt(avg)}</td><td>${q.toFixed(6)}</td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td></tr>`;
+                
+                cardsHtml += `
+                <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
+                    <div class="asset-header">
+                        <div class="asset-name-box">
+                            <img src="${a.logo}" class="asset-logo-sm">
+                            <span class="asset-symbol">${a.id}</span>
+                        </div>
+                        <div class="asset-pl-badge ${p >= 0 ? 'pl-profit' : 'pl-loss'}">
+                            ${p >= 0 ? '▲' : '▼'} ${pPct.toFixed(2)}%
+                        </div>
+                    </div>
+                    <div class="asset-body">
+                        <div>
+                            <div class="asset-label">Avg Price</div>
+                            <div class="asset-val">$${fmt(avg)}</div>
+                        </div>
+                        <div>
+                            <div class="asset-label">Market Value</div>
+                            <div class="asset-val">${privacy ? '••' : '$' + fmt(v)}</div>
+                        </div>
+                        <div>
+                            <div class="asset-label">Quantity</div>
+                            <div class="asset-val">${q.toFixed(4)}</div>
+                        </div>
+                        <div>
+                            <div class="asset-label">Profit/Loss</div>
+                            <div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div>
+                        </div>
+                    </div>
+                    <img src="${a.logo}" class="asset-bg-logo">
+                </div>`;
             }
         });
+
+        summaryArea.innerHTML = cardsHtml;
         let tUPL = totalV - totalM, tPct = totalM > 0 ? (tUPL/totalM*100) : 0;
-        tbody.innerHTML = rows; container.className = hasD ? "table-wrapper" : "hidden"; empty.className = hasD ? "hidden" : "empty-state";
+        
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
         document.getElementById("upl").innerText = privacy ? "••••" : (tUPL>=0?"+":"") + "$" + fmt(tUPL);
         document.getElementById("upl").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
         document.getElementById("uplPct").innerText = tPct.toFixed(2) + "%";
         document.getElementById("uplPct").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
+        
+        container.className = "hidden";
+        empty.className = hasD ? "hidden" : "empty-state";
     } else {
+        summaryArea.classList.add('hidden');
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
         let m = 0, q = 0, rows = "";
         (data[currentTab] || []).forEach(d => {
             m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
             rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
         });
-        tbody.innerHTML = rows; container.className = (data[currentTab]||[]).length ? "table-wrapper" : "hidden"; empty.className = (data[currentTab]||[]).length ? "hidden" : "empty-state";
+        tbody.innerHTML = rows;
+        container.className = (data[currentTab]||[]).length ? "table-wrapper" : "hidden";
+        empty.className = (data[currentTab]||[]).length ? "hidden" : "empty-state";
+        
         let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m, pct = m > 0 ? (p/m*100) : 0;
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(m);
         if (isApiOnline && lp > 0) {
@@ -380,7 +440,7 @@ function generateShareImage() {
         ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
         ctx.textAlign = "right";
         if (img) { ctx.drawImage(img, 650, 40, 100, 100); ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110); } 
-        else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab} ${asset.icon}`, 750, 110); }
+        else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab}`, 750, 110); }
         ctx.textAlign = "left"; ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
         const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
     };
