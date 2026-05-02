@@ -13,173 +13,145 @@
             --primary: #2563eb; --success: #10b981; --danger: #ef4444;
             --bg: #f8fafc; --card: #ffffff; --text-main: #1e293b;
             --text-muted: #64748b; --border: #e2e8f0;
-            --input-bg: rgba(255,255,255,0.9);
+            --input-bg: #ffffff;
         }
 
-        /* Dark Mode Variables */
         [data-theme="dark"] {
             --bg: #0f172a; --card: #1e293b; --text-main: #f1f5f9;
             --text-muted: #94a3b8; --border: #334155;
             --input-bg: #1e293b;
         }
 
-        * { box-sizing: border-box; transition: background 0.3s, color 0.3s, border-color 0.3s; }
+        * { box-sizing: border-box; transition: background 0.2s, border-color 0.2s; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 15px; }
-        .container { max-width: 1000px; margin: 0 auto; position: relative; }
+        .container { max-width: 1000px; margin: 0 auto; }
 
-        /* Auth UI */
-        .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #e2e8f0, #f8fafc); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .login-card { background: white; padding: 50px 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); text-align: center; max-width: 440px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.7); color: #1e293b; }
+        /* Header & Actions */
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header-actions { display: flex; gap: 10px; }
+        .btn-theme { background: var(--card); border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+        .btn-logout { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 11px; }
+
+        /* Tabs Tetap Berwarna */
+        .tabs-container { overflow-x: auto; display: flex; background: var(--border); padding: 6px; border-radius: 16px; margin-bottom: 20px; gap: 4px; }
+        .tabs-container button { flex: 0 0 auto; padding: 10px 20px; font-weight: 800; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         
-        .btn-google { background: #ffffff; border: 1px solid #dadce0; color: #3c4043; width: 100%; padding: 12px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-size: 16px; }
+        .tabs-container button.active { background: var(--card); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
+        .tabs-container button.active[data-coin="ETH"] { color: #627EEA; border-bottom-color: #627EEA; }
+        .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
+        .tabs-container button.active[data-coin="BNB"] { color: #F3BA2F; border-bottom-color: #F3BA2F; }
+        .tabs-container button.active[data-coin="SUI"] { color: #6FBCF0; border-bottom-color: #6FBCF0; }
+        .tabs-container button.active[data-coin="PAXG"] { color: #D4AF37; border-bottom-color: #D4AF37; }
+        .tabs-container button.active[data-coin="SUMMARY"] { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* Header Bar */
-        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 10px 0; }
-        .user-info { display: flex; flex-direction: column; }
-        .user-email { font-size: 13px; font-weight: 600; color: var(--text-muted); }
-        
-        .header-actions { display: flex; gap: 10px; align-items: center; }
-        .btn-theme { background: var(--card); border: 1px solid var(--border); color: var(--text-main); padding: 8px; border-radius: 10px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-        .btn-logout { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-        .btn-logout:hover { background: var(--danger); color: white; }
-
-        /* Custom Modal */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; transition: 0.3s; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-card { background: var(--card); padding: 32px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; transform: translateY(20px); transition: 0.3s; border: 1px solid var(--border); }
-        .modal-overlay.active .modal-card { transform: translateY(0); }
-        .btn-modal { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; }
-
-        h2 { font-weight: 800; text-align: center; margin-bottom: 25px; font-size: 1.75rem; }
-
-        /* Tabs */
-        .tabs-container { overflow-x: auto; display: flex; background: var(--border); padding: 6px; border-radius: 16px; margin-bottom: 20px; scrollbar-width: none; }
-        .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); }
-        .tabs-container button.active { background: var(--card); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); color: var(--text-main); }
-
-        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
-        .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
-
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
-        label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
-        input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: var(--input-bg); color: var(--text-main); font-size: 14px; }
-
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; position: relative; z-index: 1; }
-        .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; font-size: 15px; }
-        .btn-action { background: var(--border); color: var(--text-main); flex: 1; padding: 14px; cursor: pointer; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
+        /* Cards & Stats */
+        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; overflow: hidden; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
         .stat-item { padding: 10px; border-left: 4px solid var(--border); }
-        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; }
-        .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
+        .stat-value { font-size: 18px; font-weight: 800; margin-top: 5px; }
 
-        .live-indicator { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        /* Warna Profit/Loss Tetap */
+        .profit { color: var(--success) !important; }
+        .loss { color: var(--danger) !important; }
 
+        /* Table Styles */
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { text-align: left; padding: 16px; border-bottom: 1px solid var(--border); }
-        .profit { color: var(--success); } .loss { color: var(--danger); }
-        .hidden { display: none !important; }
+        th { color: var(--text-muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+
+        /* Input & Buttons */
+        input, select { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); padding: 12px; border-radius: 10px; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; }
+        .btn-action { background: var(--border); color: var(--text-main); border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: 600; flex: 1; font-size: 12px; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card { background: var(--card); padding: 30px; border-radius: 24px; width: 90%; max-width: 400px; border: 1px solid var(--border); }
+
+        .calc-box { background: var(--bg); border: 1px solid var(--border); border-radius: 15px; padding: 15px; margin: 15px 0; }
+        .calc-res { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 800; display: flex; justify-content: space-between; }
         
-        .calc-box { background: var(--bg); border-radius: 16px; padding: 20px; margin-top: 20px; text-align: left; border: 1px solid var(--border); }
-        .calc-res { background: var(--primary); color: white; padding: 15px; border-radius: 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+        .coin-bg-icon { position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 150px; opacity: 0.1; filter: grayscale(1); pointer-events: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="confirmModal" class="modal-overlay">
     <div class="modal-card">
-        <h4>Konfirmasi Hapus</h4>
-        <p>Hapus data transaksi ini secara permanen?</p>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-modal" style="background:var(--border); color:var(--text-main)" onclick="closeModal()">Batal</button>
-            <button class="btn-modal" style="background:var(--danger); color:white" id="confirmDeleteBtn">Hapus</button>
+        <h3>Hapus Transaksi?</h3>
+        <p style="color: var(--text-muted)">Data ini akan hilang permanen dari cloud.</p>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn-action" onclick="closeModal()">Batal</button>
+            <button class="btn-primary" style="background:var(--danger); flex:1" id="confirmDeleteBtn">Hapus</button>
         </div>
     </div>
 </div>
 
 <div id="calcModal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 450px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4 style="margin:0">🧮 DCA Calculator</h4>
-            <button onclick="closeCalc()" style="background:none; border:none; cursor:pointer; font-size:20px; color:var(--text-main)">✕</button>
-        </div>
+    <div class="modal-card">
+        <h3 style="margin:0 0 15px 0">🧮 DCA Calculator</h3>
         <div class="calc-box">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-                <div><label>Nominal Beli ($)</label><input type="number" id="calcNominal" oninput="calculateDCA()"></div>
-                <div><label>Harga Beli ($)</label><input type="number" id="calcPrice" oninput="calculateDCA()"></div>
+                <div><label style="font-size:10px">NOMINAL ($)</label><input type="number" id="calcNominal" oninput="calculateDCA()"></div>
+                <div><label style="font-size:10px">HARGA ($)</label><input type="number" id="calcPrice" oninput="calculateDCA()"></div>
             </div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;" id="calcCurrentInfo">...</div>
+            <div id="calcCurrentInfo" style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;"></div>
             <div class="calc-res"><span>New Avg Price</span><span id="resAvg">$0.00</span></div>
-            <div style="margin-top: 10px; font-size: 13px; font-weight: 600;" id="resDiff">Avg Change: 0%</div>
+            <div id="resDiff" style="margin-top:10px; font-weight:700; font-size:13px;">Change: 0%</div>
         </div>
-        <button class="btn-modal" style="background:var(--text-main); color:var(--card); width:100%; margin-top:20px;" onclick="closeCalc()">Tutup</button>
+        <button class="btn-primary" onclick="closeCalc()">Tutup</button>
     </div>
 </div>
 
-<div id="authScreen" class="auth-overlay hidden">
-    <div class="login-card">
-        <div style="font-size: 56px; margin-bottom: 24px;">🚀</div>
-        <h3>DCA Tracker Pro</h3>
-        <p>Akses dashboard investasi cloud Anda.</p>
-        <button class="btn-google" onclick="login()">Masuk dengan Google</button>
-    </div>
-</div>
-
-<div id="appScreen" class="container hidden">
+<div id="appScreen" class="container">
     <div class="header-bar">
         <div class="user-info">
-            <span style="font-size: 10px; text-transform: uppercase; color: var(--text-muted);">Logged in as</span>
+            <span style="font-size: 10px; color: var(--text-muted);">LOGGED IN AS</span>
             <span id="userEmail" class="user-email">...</span>
         </div>
         <div class="header-actions">
-            <button class="btn-theme" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌓</button>
-            <button class="btn-logout" onclick="logout()">Logout</button>
+            <button class="btn-theme" onclick="toggleDarkMode()">🌓</button>
+            <button class="btn-logout" onclick="logout()">LOGOUT</button>
         </div>
     </div>
 
-    <h2>DCA Tracker Pro</h2>
+    <h2 style="text-align:center">DCA Tracker Pro</h2>
     <div class="tabs-container" id="menuTabs"></div>
 
     <div class="card" id="inputCard">
         <img id="coinIcon" src="" class="coin-bg-icon">
-        <div class="grid-inputs">
-            <div><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL/TP</option></select></div>
-            <div><label>Tanggal</label><input type="date" id="tanggal"></div>
-            <div><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00"></div>
-            <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:15px;">
+            <div><label style="font-size:10px">TIPE</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL/TP</option></select></div>
+            <div><label style="font-size:10px">TANGGAL</label><input type="date" id="tanggal"></div>
+            <div><label style="font-size:10px">HARGA ($)</label><input type="number" id="harga" placeholder="0.00"></div>
+            <div><label style="font-size:10px">NOMINAL ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
         </div>
-        <div class="btn-group">
-            <button class="btn-primary" onclick="tambah()">Simpan ke Cloud</button>
-            <button class="btn-action" onclick="openCalc()">🧮 Calc</button>
-            <button class="btn-action" onclick="generateShareImage()">📸 Share</button>
-            <button class="btn-action" onclick="exportCSV()">📊 Excel</button>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn-primary" onclick="tambah()" style="flex:2">SIMPAN KE CLOUD</button>
+            <button class="btn-action" onclick="openCalc()">🧮 CALC</button>
             <button class="btn-action" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
         </div>
     </div>
 
     <div class="card stats-grid">
-        <div class="stat-item"><div class="stat-label" id="labelTotal">Net Investasi</div><div class="stat-value" id="totalModal">0</div></div>
-        <div class="stat-item" id="livePriceContainer">
-            <div class="stat-label">Live Price <span id="liveStatus" class="live-indicator"></span></div>
-            <div class="stat-value" id="livePrice" style="color:var(--primary)">0</div>
-        </div>
-        <div class="stat-item"><div class="stat-label">Floating P/L ($)</div><div class="stat-value" id="upl">0</div></div>
-        <div class="stat-item" style="border-left:4px solid var(--primary)"><div class="stat-label">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
+        <div class="stat-item"><div style="font-size:10px; color:var(--text-muted)">NET INVESTASI</div><div class="stat-value" id="totalModal">0</div></div>
+        <div class="stat-item" id="livePriceContainer"><div style="font-size:10px; color:var(--text-muted)">LIVE PRICE</div><div class="stat-value" id="livePrice" style="color:var(--primary)">0</div></div>
+        <div class="stat-item"><div style="font-size:10px; color:var(--text-muted)">FLOATING P/L</div><div class="stat-value" id="upl">0</div></div>
+        <div class="stat-item"><div style="font-size:10px; color:var(--text-muted)">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
     </div>
 
-    <div class="card" id="chartCard" style="height: 300px;"><canvas id="performanceChart"></canvas></div>
+    <div class="card" id="chartCard" style="height: 250px;"><canvas id="performanceChart"></canvas></div>
 
     <div class="card">
-        <div class="table-wrapper" id="tableContainer">
+        <div class="table-wrapper">
             <table><thead id="tableHead"></thead><tbody id="tabel"></tbody></table>
         </div>
-        <div id="emptyState" class="empty-state hidden">📊<br>Belum ada transaksi.</div>
     </div>
 </div>
-
-<canvas id="shareCanvas" width="800" height="450"></canvas>
 
 <script>
 const SUPABASE_URL = 'https://iuqzuuyihrnangontxft.supabase.co';
@@ -188,97 +160,61 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const assets = [
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png' },
-    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png' },
+    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#627EEA', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png' },
     { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png' },
     { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
     { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', icon: '💧' },
     { id: 'PAXG', name: 'Gold', geckoId: 'pax-gold', color: '#D4AF37', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/paxg.png' }
 ];
 
-let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
+let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null;
 
-// Dark Mode Toggle
+// UI Logic
 function toggleDarkMode() {
-    const theme = document.documentElement.getAttribute('data-theme');
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    if(chartInstance) initChart(); // Redraw chart for color consistency
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    if(chartInstance) initChart();
 }
 
-// DCA Calculator
 function openCalc() {
-    if (currentTab === "SUMMARY") return alert("Pilih satu koin di tab menu.");
+    if (currentTab === "SUMMARY") return alert("Pilih koin dulu.");
     document.getElementById('calcModal').classList.add('active');
     let m = 0, q = 0;
     data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-    document.getElementById('calcCurrentInfo').innerText = `Current: ${q.toFixed(6)} | Avg: $${fmt(m/q || 0)}`;
+    document.getElementById('calcCurrentInfo').innerText = `Saldo: ${q.toFixed(4)} | Avg: $${fmt(m/q || 0)}`;
     document.getElementById('calcPrice').value = livePrices[currentTab] || 0;
     calculateDCA();
 }
 function closeCalc() { document.getElementById('calcModal').classList.remove('active'); }
+
 function calculateDCA() {
     let m = 0, q = 0;
     data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
     const oldAvg = m/q || 0;
-    const newNom = Number(document.getElementById('calcNominal').value) || 0;
-    const newPri = Number(document.getElementById('calcPrice').value) || 0;
-    if (newPri > 0) {
-        const nAvg = (m + newNom) / (q + (newNom/newPri));
+    const nNom = Number(document.getElementById('calcNominal').value) || 0;
+    const nPri = Number(document.getElementById('calcPrice').value) || 0;
+    if (nPri > 0) {
+        const nAvg = (m + nNom) / (q + (nNom/nPri));
         document.getElementById('resAvg').innerText = "$" + fmt(nAvg);
         const diff = ((nAvg - oldAvg) / oldAvg * 100);
-        document.getElementById('resDiff').innerText = `Avg Change: ${diff.toFixed(2)}%`;
-        document.getElementById('resDiff').style.color = diff < 0 ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('resDiff').innerText = `Change: ${diff.toFixed(2)}%`;
+        document.getElementById('resDiff').className = diff <= 0 ? 'profit' : 'loss';
     }
 }
 
-// Core Functions
-async function checkUser() {
-    const { data: { user } } = await _supabase.auth.getUser();
-    if (user) {
-        currentUser = user;
-        document.getElementById('userEmail').innerText = user.email;
-        document.getElementById('authScreen').classList.add('hidden');
-        document.getElementById('appScreen').classList.remove('hidden');
-        renderTabs(); switchTab("SUMMARY"); loadData();
-    } else { document.getElementById('authScreen').classList.remove('hidden'); }
-}
-async function login() { await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
-async function logout() { await _supabase.auth.signOut(); location.reload(); }
-
+// Data Logic
 async function loadData() {
-    if (!currentUser) return;
     const { data: dbData } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
     assets.forEach(a => data[a.id] = []);
     dbData?.forEach(item => { if (data[item.asset_id]) data[item.asset_id].push(item); });
     render();
 }
 
-async function tambah() {
-    const tipe = document.getElementById("tipe").value, tgl = document.getElementById("tanggal").value;
-    const harga = Number(document.getElementById("harga").value), nominal = Number(document.getElementById("nominal").value);
-    if(!tgl || !harga || !nominal) return alert("Lengkapi data!");
-    let curQ = (data[currentTab] || []).reduce((a, b) => a + b.qty, 0);
-    let qtyIn = nominal/harga;
-    if(tipe === "SELL" && qtyIn > (curQ + 0.00000001)) return alert("Saldo tidak cukup!");
-    await _supabase.from('transaksi').insert([{ user_id: currentUser.id, asset_id: currentTab, tipe, tanggal: tgl, harga, nominal, qty: tipe === "BUY" ? qtyIn : -qtyIn }]);
-    loadData(); document.getElementById("harga").value = ""; document.getElementById("nominal").value = "";
-}
-
-function openModal(id) {
-    const modal = document.getElementById('confirmModal');
-    modal.classList.add('active');
-    document.getElementById('confirmDeleteBtn').onclick = async () => {
-        await _supabase.from('transaksi').delete().eq('id', id);
-        closeModal(); loadData();
-    };
-}
-function closeModal() { document.getElementById('confirmModal').classList.remove('active'); }
-
 function renderTabs() {
     const container = document.getElementById('menuTabs');
-    let html = `<button class="${currentTab === 'SUMMARY' ? 'active' : ''}" onclick="switchTab('SUMMARY')">SUMMARY</button>`;
-    html += assets.map(a => `<button class="${currentTab === a.id ? 'active' : ''}" onclick="switchTab('${a.id}')">${a.id}</button>`).join('');
+    let html = `<button class="${currentTab === 'SUMMARY' ? 'active' : ''}" data-coin="SUMMARY" onclick="switchTab('SUMMARY')">SUMMARY</button>`;
+    html += assets.map(a => `<button class="${currentTab === a.id ? 'active' : ''}" data-coin="${a.id}" onclick="switchTab('${a.id}')">${a.id}</button>`).join('');
     container.innerHTML = html;
 }
 
@@ -293,42 +229,60 @@ function switchTab(id) {
 
 function render() {
     const tbody = document.getElementById("tabel"), tableHead = document.getElementById("tableHead");
-    const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState");
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
     if (currentTab === "SUMMARY") {
-        tableHead.innerHTML = `<tr><th>Asset</th><th>Avg Price</th><th>Qty</th><th>Modal Net</th><th>Market Value</th><th>P/L</th></tr>`;
-        let totalM = 0, totalV = 0, rows = "", hasD = false;
+        tableHead.innerHTML = `<tr><th>Asset</th><th>Avg Price</th><th>Qty</th><th>Net Invest</th><th>Market Val</th><th>P/L</th></tr>`;
+        let totalM = 0, totalV = 0, rows = "";
         assets.forEach(a => {
             let m = 0, q = 0; 
             data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
             if (q > 0.00000001) {
-                hasD = true; let lp = livePrices[a.id] || 0, v = q * lp, p = v - m;
+                let lp = livePrices[a.id] || 0, v = q * lp, p = v - m;
                 totalM += m; totalV += v;
                 rows += `<tr><td><b>${a.id}</b></td><td>$${fmt(m/q)}</td><td>${q.toFixed(6)}</td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':'$'+fmt(p)}</td></tr>`;
             }
         });
-        tbody.innerHTML = rows; container.className = hasD ? "table-wrapper" : "hidden"; empty.className = hasD ? "hidden" : "empty-state";
+        tbody.innerHTML = rows;
         const tUPL = totalV - totalM;
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
         document.getElementById("upl").innerText = privacy ? "••••" : "$" + fmt(tUPL);
+        document.getElementById("upl").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
         document.getElementById("uplPct").innerText = totalM > 0 ? (tUPL/totalM*100).toFixed(2) + "%" : "0%";
+        document.getElementById("uplPct").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
     } else {
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
         let m = 0, q = 0, rows = "";
         (data[currentTab] || []).forEach(d => {
             m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
-            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>$${fmt(d.nominal)}</td><td>${d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer">X</td></tr>`;
+            rows += `<tr><td class="${d.tipe==='BUY'?'profit':'loss'}" style="font-weight:800">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>$${fmt(d.nominal)}</td><td>${d.qty.toFixed(6)}</td><td onclick="openDel(${d.id})" style="color:red; cursor:pointer">X</td></tr>`;
         });
-        tbody.innerHTML = rows; container.className = rows ? "table-wrapper" : "hidden"; empty.className = rows ? "hidden" : "empty-state";
+        tbody.innerHTML = rows;
         let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m;
         document.getElementById("totalModal").innerText = "$" + fmt(m);
         document.getElementById("livePrice").innerText = lp > 0 ? "$" + fmt(lp) : "OFFLINE";
         document.getElementById("upl").innerText = "$" + fmt(p);
+        document.getElementById("upl").className = "stat-value " + (p >= 0 ? "profit" : "loss");
         document.getElementById("uplPct").innerText = m > 0 ? (p/m*100).toFixed(2) + "%" : "0%";
+        document.getElementById("uplPct").className = "stat-value " + (p >= 0 ? "profit" : "loss");
     }
 }
 
+// Helpers
+async function checkUser() {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (user) { currentUser = user; document.getElementById('userEmail').innerText = user.email; loadData(); renderTabs(); switchTab("SUMMARY"); }
+}
+async function logout() { await _supabase.auth.signOut(); location.reload(); }
+async function fetchPrices() {
+    try {
+        const ids = assets.map(a => a.geckoId).join(',');
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+        const json = await res.json();
+        assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
+        render();
+    } catch(e) {}
+}
 function initChart() {
     const ctx = document.getElementById('performanceChart'); if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
@@ -338,31 +292,25 @@ function initChart() {
     chartInstance = new Chart(ctx, { 
         type: 'line', 
         data: { labels, datasets: [{ data: points, borderColor: assets.find(a=>a.id===currentTab).color, tension: 0.4, fill: true, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: isDark ? '#334155' : '#e2e8f0' }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } }, y: { grid: { color: isDark ? '#334155' : '#e2e8f0' }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: isDark ? '#94a3b8' : '#64748b' } }, y: { ticks: { color: isDark ? '#94a3b8' : '#64748b' } } } }
     });
 }
-
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 function togglePrivacy() { privacy = !privacy; render(); }
-function generateShareImage() { alert("Fitur Share siap digunakan."); }
-function exportCSV() { alert("Export Excel siap."); }
-
-async function fetchPrices() {
-    try {
-        const ids = assets.map(a => a.geckoId).join(',');
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-        const json = await res.json();
-        assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
-        isApiOnline = true;
-    } catch(e) { isApiOnline = false; }
-    render();
+function openDel(id) { 
+    document.getElementById('confirmModal').classList.add('active'); 
+    document.getElementById('confirmDeleteBtn').onclick = async () => {
+        await _supabase.from('transaksi').delete().eq('id', id);
+        document.getElementById('confirmModal').classList.remove('active');
+        loadData();
+    };
 }
+function closeModal() { document.getElementById('confirmModal').classList.remove('active'); }
 
-// Init theme on load
 (async () => {
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    await fetchPrices(); await checkUser(); setInterval(fetchPrices, 60000);
+    await checkUser(); await fetchPrices(); setInterval(fetchPrices, 60000);
 })();
 </script>
 </body>
