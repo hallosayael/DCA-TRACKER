@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <style>
         :root {
             --primary: #2563eb; --success: #10b981; --danger: #ef4444;
@@ -18,11 +18,11 @@
         * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 15px; }
         .container { max-width: 1000px; margin: 0 auto; position: relative; }
-        
+
         /* Auth UI */
         .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #e2e8f0, #f8fafc); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .login-card { background: white; padding: 50px 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); text-align: center; max-width: 440px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.7); }
-        
+
         .btn-google { background: #ffffff; border: 1px solid #dadce0; color: #3c4043; width: 100%; padding: 12px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-size: 16px; }
         .btn-google:hover { background: #f7f8f9; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .btn-google svg { width: 20px; height: 20px; }
@@ -49,7 +49,7 @@
         .tabs-container { overflow-x: auto; display: flex; background: #e2e8f0; padding: 6px; border-radius: 16px; margin-bottom: 20px; scrollbar-width: none; }
         .tabs-container button { flex: 0 0 auto; padding: 10px 22px; font-weight: 700; border: none; border-radius: 12px; background: transparent; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; }
         .tabs-container button.active { background: var(--card); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        
+
         .tabs-container button.active[data-coin="BTC"] { color: #F7931A; border-bottom-color: #F7931A; }
         .tabs-container button.active[data-coin="ETH"] { color: #4b4b4b; border-bottom-color: #4b4b4b; }
         .tabs-container button.active[data-coin="SOL"] { color: #A464FA; border-bottom-color: #A464FA; }
@@ -60,15 +60,15 @@
 
         .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
         .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
-        
+
         .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
         label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
         input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
-        
+
         .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; position: relative; z-index: 1; }
         .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; font-size: 15px; }
         .btn-action { background: #f1f5f9; color: var(--text-main); flex: 1; padding: 14px; cursor: pointer; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        
+
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
         .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
         .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; }
@@ -85,6 +85,11 @@
         .hidden { display: none !important; }
         #shareCanvas { display: none; }
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+
+        /* Calculator Styles */
+        .calc-box { background: #f1f5f9; border-radius: 16px; padding: 20px; margin-top: 20px; text-align: left; }
+        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .calc-res { background: var(--primary); color: white; padding: 15px; border-radius: 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -97,6 +102,40 @@
             <button class="btn-modal" style="background:#f1f5f9" onclick="closeModal()">Batal</button>
             <button class="btn-modal" style="background:var(--danger); color:white" id="confirmDeleteBtn">Hapus</button>
         </div>
+    </div>
+</div>
+
+<div id="calcModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 450px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin:0">🧮 DCA Calculator</h4>
+            <button onclick="closeCalc()" style="background:none; border:none; cursor:pointer; font-size:20px;">✕</button>
+        </div>
+        <p style="text-align: left; margin-bottom: 15px;">Simulasikan harga rata-rata jika Anda menambah muatan.</p>
+        
+        <div class="calc-box">
+            <div class="calc-grid">
+                <div>
+                    <label>Nominal Beli ($)</label>
+                    <input type="number" id="calcNominal" oninput="calculateDCA()" placeholder="Contoh: 100">
+                </div>
+                <div>
+                    <label>Harga Beli ($)</label>
+                    <input type="number" id="calcPrice" oninput="calculateDCA()" placeholder="Harga target">
+                </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;" id="calcCurrentInfo">
+                Saldo Saat Ini: 0.00 | Avg: $0.00
+            </div>
+            <div class="calc-res">
+                <span>New Avg Price</span>
+                <span id="resAvg">$0.00</span>
+            </div>
+            <div style="margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--primary);" id="resDiff">
+                Penurunan Avg: 0%
+            </div>
+        </div>
+        <button class="btn-modal" style="background:var(--text-main); color:white; width:100%; margin-top:20px;" onclick="closeCalc()">Selesai</button>
     </div>
 </div>
 
@@ -134,6 +173,7 @@
         </div>
         <div class="btn-group">
             <button class="btn-primary" onclick="tambah()">Simpan ke Cloud</button>
+            <button class="btn-action" onclick="openCalc()">🧮 Calc</button>
             <button class="btn-action" onclick="generateShareImage()">📸 Share</button>
             <button class="btn-action" onclick="exportCSV()">📊 Excel</button>
             <button class="btn-action" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
@@ -177,6 +217,42 @@ const assets = [
 ];
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
+
+// Fungsi-fungsi Calculator
+function openCalc() {
+    if (currentTab === "SUMMARY") return alert("Pilih satu koin dulu di menu tab.");
+    document.getElementById('calcModal').classList.add('active');
+    let m = 0, q = 0;
+    data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+    document.getElementById('calcCurrentInfo').innerText = `Saldo: ${q.toFixed(6)} ${currentTab} | Avg: $${fmt(m/q || 0)}`;
+    document.getElementById('calcPrice').value = livePrices[currentTab] || 0;
+    calculateDCA();
+}
+
+function closeCalc() { document.getElementById('calcModal').classList.remove('active'); }
+
+function calculateDCA() {
+    let m = 0, q = 0;
+    data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+    
+    const oldAvg = m/q || 0;
+    const newNominal = Number(document.getElementById('calcNominal').value) || 0;
+    const newPrice = Number(document.getElementById('calcPrice').value) || 0;
+    
+    if (newPrice > 0) {
+        const newQty = newNominal / newPrice;
+        const totalM = m + newNominal;
+        const totalQ = q + newQty;
+        const newAvg = totalM / totalQ;
+        
+        document.getElementById('resAvg').innerText = "$" + fmt(newAvg);
+        const diff = ((newAvg - oldAvg) / oldAvg * 100);
+        if (oldAvg > 0) {
+            document.getElementById('resDiff').innerText = `${diff < 0 ? 'Penurunan' : 'Kenaikan'} Avg: ${diff.toFixed(2)}%`;
+            document.getElementById('resDiff').style.color = diff < 0 ? 'var(--success)' : 'var(--danger)';
+        }
+    }
+}
 
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
@@ -239,43 +315,23 @@ function switchTab(id) {
 
 function render() {
     const tbody = document.getElementById("tabel"), tableHead = document.getElementById("tableHead");
-    const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState"), emptyT = document.getElementById("emptyText");
+    const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState");
     const livePriceEl = document.getElementById("livePrice"), statusInd = document.getElementById("liveStatus");
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
     if (currentTab === "SUMMARY") {
-        // MENAMBAHKAN KOLOM AVG PRICE DAN QTY DI SINI
         tableHead.innerHTML = `<tr><th>Asset</th><th>Avg. Price</th><th>Total Qty</th><th>Modal Net</th><th>Market Value</th><th>Floating P/L</th></tr>`;
         let totalM = 0, totalV = 0, rows = "", hasD = false;
-        
         assets.forEach(a => {
             let m = 0, q = 0; 
-            data[a.id]?.forEach(d => { 
-                m += d.tipe === 'BUY' ? d.nominal : -d.nominal; 
-                q += d.qty; 
-            });
-
+            data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
             if (q > 0.00000001) {
                 hasD = true; 
-                let lp = livePrices[a.id] || 0;
-                let v = q * lp;
-                let p = v - m;
-                let avg = m / q; // Menghitung Rata-rata harga beli
-
-                totalM += m; 
-                totalV += v;
-                
-                rows += `<tr>
-                    <td><b>${a.id}</b></td>
-                    <td>$${fmt(avg)}</td>
-                    <td>${q.toFixed(6)}</td>
-                    <td>${privacy?'••':'$'+fmt(m)}</td>
-                    <td>${privacy?'••':'$'+fmt(v)}</td>
-                    <td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td>
-                </tr>`;
+                let lp = livePrices[a.id] || 0, v = q * lp, p = v - m, avg = m / q;
+                totalM += m; totalV += v;
+                rows += `<tr><td><b>${a.id}</b></td><td>$${fmt(avg)}</td><td>${q.toFixed(6)}</td><td>${privacy?'••':'$'+fmt(m)}</td><td>${privacy?'••':'$'+fmt(v)}</td><td class="${p>=0?'profit':'loss'}">${privacy?'••':(p>=0?'+':'')+'$'+fmt(p)}</td></tr>`;
             }
         });
-        
         let tUPL = totalV - totalM, tPct = totalM > 0 ? (tUPL/totalM*100) : 0;
         tbody.innerHTML = rows; container.className = hasD ? "table-wrapper" : "hidden"; empty.className = hasD ? "hidden" : "empty-state";
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
@@ -313,7 +369,6 @@ function generateShareImage() {
     let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
     const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
     const isP = p >= 0;
-
     const draw = (img = null) => {
         ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
         ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 70);
@@ -323,25 +378,13 @@ function generateShareImage() {
         ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
         ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText("AVG BUY", 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("ASSET", 550, 385);
         ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
-
         ctx.textAlign = "right";
-        if (img) {
-            ctx.drawImage(img, 650, 40, 100, 100);
-            ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110);
-        } else {
-            ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab} ${asset.icon}`, 750, 110);
-        }
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
-
+        if (img) { ctx.drawImage(img, 650, 40, 100, 100); ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110); } 
+        else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab} ${asset.icon}`, 750, 110); }
+        ctx.textAlign = "left"; ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
         const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
     };
-
-    const logoImg = new Image();
-    logoImg.crossOrigin = "anonymous";
-    logoImg.onload = () => draw(logoImg);
-    logoImg.onerror = () => draw();
-    logoImg.src = asset.logo;
+    const logoImg = new Image(); logoImg.crossOrigin = "anonymous"; logoImg.onload = () => draw(logoImg); logoImg.onerror = () => draw(); logoImg.src = asset.logo;
 }
 
 function exportCSV() {
