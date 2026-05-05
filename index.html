@@ -517,40 +517,37 @@ function exportCSV() {
     const lp = livePrices[currentTab] || 0;
     const pnl = (pos.qty * lp) - pos.modal;
 
-    // Menentukan pemisah kolom agar otomatis rapi di Excel
-    let csv = "sep=,\n"; 
+    // Ganti sep=, menjadi sep=; agar sesuai regional Indonesia
+    let csv = "sep=;\n"; 
 
-    // BAGIAN 1: DETAIL RIWAYAT TRANSAKSI (Di Atas)
+    // BAGIAN 1: DETAIL RIWAYAT TRANSAKSI
     csv += `RIWAYAT TRANSAKSI ASSET: ${currentTab}\n`;
-    csv += `Tipe,Tanggal,Harga Asset ($),Nominal Investasi ($),Quantity Didapat\n`;
+    // Gunakan titik koma sebagai pemisah kolom
+    csv += `Tipe;Tanggal;Harga Asset ($);Nominal Investasi ($);Quantity Didapat\n`;
 
     (data[currentTab] || []).forEach(d => {
-        // Menggunakan toFixed untuk menjaga konsistensi desimal di Excel
-        csv += `${d.tipe},${d.tanggal},${d.harga.toFixed(2)},${d.nominal.toFixed(2)},${d.qty.toFixed(8)}\n`;
+        // Angka desimal tetap pakai titik agar tidak tertukar dengan pemisah kolom
+        csv += `${d.tipe};${d.tanggal};${d.harga.toFixed(2)};${d.nominal.toFixed(2)};${d.qty.toFixed(8)}\n`;
     });
 
-    // Memberikan jarak baris kosong antara tabel transaksi dan ringkasan
     csv += "\n\n";
 
-    // BAGIAN 2: RINGKASAN POSISI ASET (Di Bawah)
+    // BAGIAN 2: RINGKASAN POSISI ASET
     csv += `RINGKASAN POSISI AKHIR\n`;
-    csv += `Keterangan,Nilai\n`;
-    csv += `Total Holding Quantity,${pos.qty.toFixed(8)}\n`;
-    csv += `Average Buy Price,$${pos.avg.toFixed(2)}\n`;
-    csv += `Total Net Investment (Modal),$${pos.modal.toFixed(2)}\n`;
-    csv += `Current Market Value,$${(pos.qty * lp).toFixed(2)}\n`;
-    csv += `Floating Profit/Loss ($),$${pnl.toFixed(2)}\n`;
-    csv += `Profit/Loss (%),${(pos.modal > 0 ? (pnl/pos.modal*100) : 0).toFixed(2)}%\n`;
+    csv += `Keterangan;Nilai\n`;
+    csv += `Total Holding Quantity;${pos.qty.toFixed(8)}\n`;
+    csv += `Average Buy Price;${pos.avg.toFixed(2)}\n`;
+    csv += `Total Net Investment (Modal);${pos.modal.toFixed(2)}\n`;
+    csv += `Current Market Value;${(pos.qty * lp).toFixed(2)}\n`;
+    csv += `Floating Profit/Loss ($);${pnl.toFixed(2)}\n`;
+    csv += `Profit/Loss (%);${(pos.modal > 0 ? (pnl/pos.modal*100) : 0).toFixed(2)}%\n`;
 
-    // Proses pembuatan file dan download
-    // Menggunakan \ufeff (BOM) agar Excel mengenali encoding UTF-8 dengan benar
     const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     
-    const dateStamp = new Date().toISOString().split('T')[0];
     link.setAttribute('href', url);
-    link.setAttribute('download', `DCA_History_${currentTab}_${dateStamp}.csv`);
+    link.setAttribute('download', `DCA_History_${currentTab}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
