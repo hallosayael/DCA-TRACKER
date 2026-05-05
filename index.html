@@ -238,54 +238,25 @@ const assets = [
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
 
 // Fungsi Inti: Menghitung posisi berdasarkan Average Price
-// Fungsi Inti yang Diperbaiki: Menghitung posisi dan P/L Realized
 function calcPosition(list) {
-    let qty = 0;
-    let modalAtCost = 0; // Modal hanya dari BUY
-    let modalRemaining = 0; // Modal proporsional yang tersisa (untuk Avg Buy)
-    let realizedPL = 0; // Keuntungan/Kerugian yang difinalkan dari SELL
-
+    let qty = 0, modal = 0;
     list.forEach(d => {
         if (d.tipe === 'BUY') {
             qty += d.qty;
-            modalAtCost += d.nominal;
-            modalRemaining += d.nominal;
-        } else if (d.tipe === 'SELL') {
+            modal += d.nominal;
+        } else {
             if (qty > 0) {
-                // 1. Hitung Harga Rata-rata Beli SAAT INI (sebelum dijual)
-                const currentAvgBuyPrice = modalRemaining / qty;
-
-                // 2. Hitung Modal yang dikeluarkan untuk Quantity yang dijual ini (Proporsional)
+                const avg = modal / qty;
                 const qtySell = Math.abs(d.qty);
-                const modalOfSoldQty = currentAvgBuyPrice * qtySell;
-
-                // 3. Hitung P/L Realized dari transaksi penjualan ini
-                // (Hasil Jual - Modal Proporsional Beli)
-                const revenueFromSell = Math.abs(d.nominal); // Nominal SELL adalah hasil jual
-                const profitFromThisSell = revenueFromSell - modalOfSoldQty;
-                realizedPL += profitFromThisSell;
-
-                // 4. Kurangi modal tersisa dan quantity
-                modalRemaining -= modalOfSoldQty;
+                modal -= avg * qtySell; // Modal dikurangi proporsional terhadap harga rata-rata beli
                 qty -= qtySell;
             }
         }
     });
-
-    // Handle presisi floating point agar tidak sedikit di atas 0
-    if (qty < 0.00000001) qty = 0;
-
-    const currentModal = Math.max(0, modalRemaining);
-    const avgPrice = qty > 0 ? currentModal / qty : 0;
-
-    // Output yang lebih kaya informasi
     return {
-        qty: qty,
-        modal: currentModal, // Modal proporsional tersisa untuk asset yang masih dipegang
-        avg: avgPrice,
-        realizedPL: realizedPL, // TOTAL P/L final yang didapat dari semua SELL
-        // Total Investasi Kotor (tanpa dikurangi SELL) untuk referensi share
-        totalGrossInvestment: modalAtCost 
+        qty: Math.max(0, qty),
+        modal: Math.max(0, modal),
+        avg: qty > 0.00000001 ? modal / qty : 0
     };
 }
 
@@ -386,71 +357,46 @@ function render() {
     
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-// ... di dalam fungsi render() ...
-if (currentTab === "SUMMARY") {
-    summaryArea.classList.remove('hidden');
-    let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
+    if (currentTab === "SUMMARY") {
+        summaryArea.classList.remove('hidden');
+        let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
 
-    assets.forEach(a => {
-        const transData = data[a.id] || [];
-        if (transData.length === 0) return; // Skip asset tanpa transaksi
+        assets.forEach(a => {
+            const pos = calcPosition(data[a.id] || []);
+            if (pos.qty > 0.00000001) {
+                hasD = true; 
+                let lp = livePrices[a.id] || 0, v = pos.qty * lp, p = v - pos.modal, pPct = (p/pos.modal*100);
+                totalM += pos.modal; totalV += v;
+                cardsHtml += `
+                <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
+                    <div class="asset-header">
+                        <div class="asset-name-box">
+                            <img src="${a.logo}" class="asset-logo-sm">
+                            <span class="asset-symbol">${a.id}</span>
+                        </div>
+                        <div class="asset-pl-badge ${p >= 0 ? 'pl-profit' : 'pl-loss'}">
+                            ${p >= 0 ? '▲' : '▼'} ${pPct.toFixed(2)}%
+                        </div>
+                    </div>
+                    <div class="asset-body">
+                        <div><div class="asset-label">Avg Price</div><div class="asset-val">$${fmt(pos.avg)}</div></div>
+                        <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div></div>
+                        <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
+                        <div><div class="asset-label">Profit/Loss</div><div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div></div>
+                    </div>
+                    <img src="${a.logo}" class="asset-bg-logo">
+                </div>`;
+            }
+        });
 
-        const pos = calcPosition(transData);
-        hasD = true; 
-
-        let lp = livePrices[a.id] || 0;
-        let marketValue = pos.qty * lp;
-        
-        let displayPL_Dollar = 0;
-        let displayPL_Percent = 0;
-        let statusText = "";
-        let plClass = "";
-        let avgPriceToDisplay = pos.avg;
-
-        // LOGIKA BARU UNTUK DISPLAY P/L
-        if (pos.qty > 0.00000001) {
-            // Masih ada barang: Tampilkan Floating P/L (seperti biasa)
-            displayPL_Dollar = marketValue - pos.modal;
-            displayPL_Percent = pos.modal > 0 ? (displayPL_Dollar / pos.modal * 100) : 0;
-            statusText = displayPL_Dollar >= 0 ? '▲' : '▼';
-            plClass = displayPL_Dollar >= 0 ? 'pl-profit' : 'pl-loss';
-            avgPriceToDisplay = pos.avg;
-            
-            totalM += pos.modal; 
-            totalV += marketValue;
-        } else {
-            // Asset HABIS (Terjual Semua): Tampilkan Realized P/L Final
-            displayPL_Dollar = pos.realizedPL;
-            // Persen dihitung dari total modal awal yang dikeluarkan untuk asset ini
-            displayPL_Percent = pos.totalGrossInvestment > 0 ? (pos.realizedPL / pos.totalGrossInvestment * 100) : 0;
-            statusText = displayPL_Dollar >= 0 ? '💰 Final' : '🔴 Final';
-            plClass = displayPL_Dollar >= 0 ? 'pl-profit' : 'pl-loss';
-            // Saat habis, avg buy menjadi tidak relevan, tampilkan "-" atau harga sell terakhir (opsional)
-            avgPriceToDisplay = 0; 
-        }
-
-        cardsHtml += `
-        <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
-            <div class="asset-header">
-                <div class="asset-name-box">
-                    <img src="${a.logo}" class="asset-logo-sm">
-                    <span class="asset-symbol">${a.id}</span>
-                </div>
-                <div class="asset-pl-badge ${plClass}">
-                    ${statusText} ${displayPL_Percent.toFixed(2)}%
-                </div>
-            </div>
-            <div class="asset-body">
-                <div><div class="asset-label">Avg Buy Price</div><div class="asset-val">${avgPriceToDisplay > 0 ? '$' + fmt(avgPriceToDisplay) : '-'}</div></div>
-                <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(marketValue)}</div></div>
-                <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
-                <div><div class="asset-label">Net Profit/Loss</div><div class="asset-val ${displayPL_Dollar >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (displayPL_Dollar >= 0 ? '+' : '') + '$' + fmt(displayPL_Dollar)}</div></div>
-            </div>
-            <img src="${a.logo}" class="asset-bg-logo">
-        </div>`;
-    });
-    // ... sisa fungsi render summary ...
-} else {
+        summaryArea.innerHTML = cardsHtml;
+        let tUPL = totalV - totalM, tPct = totalM > 0 ? (tUPL/totalM*100) : 0;
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
+        document.getElementById("upl").innerText = privacy ? "••••" : (tUPL>=0?"+":"") + "$" + fmt(tUPL);
+        document.getElementById("uplPct").innerText = tPct.toFixed(2) + "%";
+        container.className = "hidden";
+        empty.className = hasD ? "hidden" : "empty-state";
+    } else {
         summaryArea.classList.add('hidden');
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
         let rows = "";
@@ -482,31 +428,15 @@ function generateShareImage() {
 
     // MENGGUNAKAN LOGIKA YANG SAMA DENGAN DASHBOARD
     const pos = calcPosition(data[currentTab] || []);
-    const lp = livePrices[currentTab] || 0;
-
-    let displayPL_Percent = 0;
-    let isP = true;
-    let titleStatus = "Performance";
-    let footerPLText = "AVG BUY";
-    let footerPLValue = "$" + fmt(pos.avg);
     
     // Jika tidak ada saldo, jangan generate
-    if (pos.qty > 0) {
-        // Masih pegang asset: Tampilkan Floating P/L (seperti biasa)
-        const currentMarketValue = pos.qty * lp;
-        const floatingPLDollar = currentMarketValue - pos.modal;
-        displayPL_Percent = pos.modal > 0 ? (floatingPLDollar / pos.modal * 100) : 0;
-        isP = floatingPLDollar >= 0;
-        titleStatus = "Snapshot"; // Atau "Live Performance"
-        footerPLValue = "$" + fmt(pos.avg);
-    } else {
-        // Asset HABIS: Tampilkan Realized P/L Final
-        displayPL_Percent = pos.totalGrossInvestment > 0 ? (pos.realizedPL / pos.totalGrossInvestment * 100) : 0;
-        isP = pos.realizedPL >= 0;
-        titleStatus = "Final Realized P/L";
-        footerPLText = "TOTAL REALIZED"; // Ganti label di footer
-        footerPLValue = (pos.realizedPL >= 0 ? '+' : '') + "$" + fmt(pos.realizedPL);
-    }
+    if (pos.qty <= 0) return alert("Tidak ada saldo untuk dibagikan.");
+
+    const lp = livePrices[currentTab] || 0;
+    const currentMarketValue = pos.qty * lp;
+    const p = currentMarketValue - pos.modal;
+    const pct = pos.modal > 0 ? (p / pos.modal * 100) : 0;
+    const isP = p >= 0;
 
     const draw = (img = null) => {
         // Background
@@ -516,19 +446,19 @@ function generateShareImage() {
         // Header
         ctx.fillStyle = "white"; 
         ctx.font = "bold 32px Inter"; 
-        ctx.fillText(`${asset.name} ${titleStatus}`, 50, 70);
+        ctx.fillText(`${asset.name} Performance`, 50, 70);
 
         ctx.fillStyle = "#64748b"; 
         ctx.font = "500 18px Inter"; 
         ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
 
-        // Persentase Besar
-        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 120px Inter"; 
-        ctx.fillText((displayPL_Percent >= 0 ? "+" : "") + displayPL_Percent.toFixed(2) + "%", 45, 260);
+        // Persentase PNL
+        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; 
+        ctx.font = "bold 120px Inter"; 
+        ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
 
-        ctx.font = "bold 24px Inter";
-        const statusText = pos.qty > 0 ? (isP ? "PROFIT" : "LOSS") : (isP ? "REALIZED PROFIT" : "REALIZED LOSS");
-        ctx.fillText(statusText, 50, 310);
+        ctx.font = "bold 24px Inter"; 
+        ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
 
         // Garis Pemisah
         ctx.strokeStyle = "#334155"; 
@@ -536,19 +466,18 @@ function generateShareImage() {
         ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
 
         // Footer Labels
-ctx.fillStyle = "#94a3b8"; 
-ctx.font = "700 14px Inter"; 
+        ctx.fillStyle = "#94a3b8"; 
+        ctx.font = "700 14px Inter"; 
+        ctx.fillText("AVG BUY", 50, 385); 
+        ctx.fillText("LAST PRICE", 300, 385); 
+        ctx.fillText("ASSET", 550, 385);
 
-// GUNAKAN VARIABEL footerPLText, BUKAN TEKS STATIS "AVG BUY"
-ctx.fillText(footerPLText, 50, 385); 
-
-ctx.fillText("LAST PRICE", 300, 385); 
-ctx.fillText("ASSET", 550, 385);
-
-// Footer Values
-ctx.fillStyle = "white"; 
-ctx.font = "bold 28px Inter"; 
-ctx.fillText(footerPLValue, 50, 420);
+        // Footer Values (Menggunakan pos.avg yang sudah dihitung calcPosition)
+        ctx.fillStyle = "white"; 
+        ctx.font = "bold 28px Inter"; 
+        ctx.fillText("$" + fmt(pos.avg), 50, 420); 
+        ctx.fillText("$" + fmt(lp), 300, 420); 
+        ctx.fillText(currentTab, 550, 420);
 
         // Logo & Watermark
         ctx.textAlign = "right";
