@@ -237,33 +237,53 @@ const assets = [
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
 
+// Fungsi Inti: Menghitung posisi berdasarkan Average Price
+function calcPosition(list) {
+    let qty = 0, modal = 0;
+    list.forEach(d => {
+        if (d.tipe === 'BUY') {
+            qty += d.qty;
+            modal += d.nominal;
+        } else {
+            if (qty > 0) {
+                const avg = modal / qty;
+                const qtySell = Math.abs(d.qty);
+                modal -= avg * qtySell; // Modal dikurangi proporsional terhadap harga rata-rata beli
+                qty -= qtySell;
+            }
+        }
+    });
+    return {
+        qty: Math.max(0, qty),
+        modal: Math.max(0, modal),
+        avg: qty > 0.00000001 ? modal / qty : 0
+    };
+}
+
 function openCalc() {
-    if (currentTab === "SUMMARY") return alert("Pilih satu koin dulu di menu tab.");
+    const pos = calcPosition(data[currentTab] || []);
+    document.getElementById('calcCurrentInfo').innerText = `Saldo Saat Ini: ${pos.qty.toFixed(6)} | Avg: $${fmt(pos.avg)}`;
+    document.getElementById('calcNominal').value = "";
+    document.getElementById('calcPrice').value = livePrices[currentTab] || "";
+    document.getElementById('resAvg').innerText = "$0.00";
+    document.getElementById('resDiff').innerText = "Penurunan Avg: 0%";
     document.getElementById('calcModal').classList.add('active');
-    let m = 0, q = 0;
-    data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-    document.getElementById('calcCurrentInfo').innerText = `Saldo: ${q.toFixed(6)} ${currentTab} | Avg: $${fmt(m/q || 0)}`;
-    document.getElementById('calcPrice').value = livePrices[currentTab] || 0;
-    calculateDCA();
 }
 
 function closeCalc() { document.getElementById('calcModal').classList.remove('active'); }
 
 function calculateDCA() {
-    let m = 0, q = 0;
-    data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-    const oldAvg = m/q || 0;
+    const pos = calcPosition(data[currentTab] || []);
     const newNominal = Number(document.getElementById('calcNominal').value) || 0;
     const newPrice = Number(document.getElementById('calcPrice').value) || 0;
     if (newPrice > 0) {
-        const newQty = newNominal / newPrice;
-        const totalM = m + newNominal;
-        const totalQ = q + newQty;
-        const newAvg = totalM / totalQ;
+        const newQtyTotal = pos.qty + (newNominal / newPrice);
+        const newModalTotal = pos.modal + newNominal;
+        const newAvg = newModalTotal / newQtyTotal;
         document.getElementById('resAvg').innerText = "$" + fmt(newAvg);
-        const diff = ((newAvg - oldAvg) / oldAvg * 100);
-        if (oldAvg > 0) {
-            document.getElementById('resDiff').innerText = `${diff < 0 ? 'Penurunan' : 'Kenaikan'} Avg: ${diff.toFixed(2)}%`;
+        if (pos.avg > 0) {
+            const diff = ((newAvg - pos.avg) / pos.avg * 100);
+            document.getElementById('resDiff').innerText = `${diff < 0 ? 'Penurunan' : 'Kenaikan'} Avg: ${Math.abs(diff).toFixed(2)}%`;
             document.getElementById('resDiff').style.color = diff < 0 ? 'var(--success)' : 'var(--danger)';
         }
     }
@@ -337,19 +357,16 @@ function render() {
     
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
-      if (currentTab === "SUMMARY") {
+    if (currentTab === "SUMMARY") {
         summaryArea.classList.remove('hidden');
         let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
 
         assets.forEach(a => {
-            let m = 0, q = 0; 
-            data[a.id]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-            
-            if (q > 0.00000001) {
+            const pos = calcPosition(data[a.id] || []);
+            if (pos.qty > 0.00000001) {
                 hasD = true; 
-                let lp = livePrices[a.id] || 0, v = q * lp, p = v - m, avg = m / q, pPct = (p/m*100);
-                totalM += m; totalV += v;
-                
+                let lp = livePrices[a.id] || 0, v = pos.qty * lp, p = v - pos.modal, pPct = (p/pos.modal*100);
+                totalM += pos.modal; totalV += v;
                 cardsHtml += `
                 <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
                     <div class="asset-header">
@@ -362,22 +379,10 @@ function render() {
                         </div>
                     </div>
                     <div class="asset-body">
-                        <div>
-                            <div class="asset-label">Avg Price</div>
-                            <div class="asset-val">$${fmt(avg)}</div>
-                        </div>
-                        <div>
-                            <div class="asset-label">Market Value</div>
-                            <div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div>
-                        </div>
-                        <div>
-                            <div class="asset-label">Quantity</div>
-                            <div class="asset-val">${privacy ? '••••' : q.toFixed(4)}</div>
-                        </div>
-                        <div>
-                            <div class="asset-label">Profit/Loss</div>
-                            <div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div>
-                        </div>
+                        <div><div class="asset-label">Avg Price</div><div class="asset-val">$${fmt(pos.avg)}</div></div>
+                        <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div></div>
+                        <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
+                        <div><div class="asset-label">Profit/Loss</div><div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div></div>
                     </div>
                     <img src="${a.logo}" class="asset-bg-logo">
                 </div>`;
@@ -386,91 +391,48 @@ function render() {
 
         summaryArea.innerHTML = cardsHtml;
         let tUPL = totalV - totalM, tPct = totalM > 0 ? (tUPL/totalM*100) : 0;
-        
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
         document.getElementById("upl").innerText = privacy ? "••••" : (tUPL>=0?"+":"") + "$" + fmt(tUPL);
-        document.getElementById("upl").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
         document.getElementById("uplPct").innerText = tPct.toFixed(2) + "%";
-        document.getElementById("uplPct").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
-        
         container.className = "hidden";
         empty.className = hasD ? "hidden" : "empty-state";
     } else {
         summaryArea.classList.add('hidden');
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
-        let m = 0, q = 0, rows = "";
+        let rows = "";
+        const pos = calcPosition(data[currentTab] || []);
         (data[currentTab] || []).forEach(d => {
-            m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty;
             rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
         });
         tbody.innerHTML = rows;
         container.className = (data[currentTab]||[]).length ? "table-wrapper" : "hidden";
         empty.className = (data[currentTab]||[]).length ? "hidden" : "empty-state";
         
-        let lp = livePrices[currentTab] || 0, v = q * lp, p = v - m, pct = m > 0 ? (p/m*100) : 0;
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(m);
+        let lp = livePrices[currentTab] || 0, v = pos.qty * lp, p = v - pos.modal, pct = pos.modal > 0 ? (p/pos.modal*100) : 0;
+        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(pos.modal);
         if (isApiOnline && lp > 0) {
-            livePriceEl.innerText = "$" + fmt(lp); statusInd.classList.remove('offline');
+            livePriceEl.innerText = "$" + fmt(lp);
             document.getElementById("upl").innerText = privacy ? "••••" : (p>=0?"+":"") + "$" + fmt(p);
-            document.getElementById("upl").className = "stat-value " + (p>=0?"profit":"loss");
             document.getElementById("uplPct").innerText = pct.toFixed(2) + "%";
+            document.getElementById("upl").className = "stat-value " + (p>=0?"profit":"loss");
             document.getElementById("uplPct").className = "stat-value " + (p>=0?"profit":"loss");
-        } else {
-            livePriceEl.innerText = "OFFLINE"; statusInd.classList.add('offline');
-            document.getElementById("upl").innerText = "---"; document.getElementById("uplPct").innerText = "0%";
         }
     }
-}
-
-function generateShareImage() {
-    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
-    const asset = assets.find(a => a.id === currentTab);
-    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
-    let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
-    const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
-    const isP = p >= 0;
-    const draw = (img = null) => {
-        ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
-        ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 70);
-        ctx.fillStyle = "#64748b"; ctx.font = "500 18px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
-        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 120px Inter"; ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
-        ctx.font = "bold 24px Inter"; ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
-        ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
-        ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText("AVG BUY", 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("ASSET", 550, 385);
-        ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
-        ctx.textAlign = "right";
-        if (img) { ctx.drawImage(img, 650, 40, 100, 100); ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110); } 
-        else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab}`, 750, 110); }
-        ctx.textAlign = "left"; ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
-        const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
-    };
-    const logoImg = new Image(); logoImg.crossOrigin = "anonymous"; logoImg.onload = () => draw(logoImg); logoImg.onerror = () => draw(); logoImg.src = asset.logo;
-}
-
-function exportCSV() {
-    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
-    let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
-    (data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
-    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
-}
-
-async function fetchPrices() {
-    try {
-        const ids = assets.map(a => a.geckoId).join(',');
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-        if (!res.ok) throw new Error();
-        const json = await res.json();
-        assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
-        isApiOnline = true;
-    } catch(e) { isApiOnline = false; }
-    render();
 }
 
 function initChart() {
     const ctx = document.getElementById('performanceChart'); if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
-    let labels = [], points = [], running = 0;
-    data[currentTab]?.forEach(d => { labels.push(d.tanggal); running += (d.tipe === 'BUY' ? d.nominal : -d.nominal); points.push(running); });
+    let labels = [], points = [], tempQty = 0, tempModal = 0;
+    (data[currentTab] || []).forEach(d => {
+        if (d.tipe === 'BUY') { tempQty += d.qty; tempModal += d.nominal; }
+        else { 
+            const avg = tempModal / tempQty;
+            tempModal -= avg * Math.abs(d.qty);
+            tempQty -= Math.abs(d.qty);
+        }
+        labels.push(d.tanggal); points.push(tempModal);
+    });
     chartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Investasi', data: points, borderColor: assets.find(a=>a.id===currentTab).color, fill: true, backgroundColor: 'rgba(0,0,0,0.03)', tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
 }
 
