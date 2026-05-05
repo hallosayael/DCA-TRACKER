@@ -419,7 +419,42 @@ function render() {
         }
     }
 }
+async function generateShareImage() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 900;
+    canvas.height = 500;
+    const ctx = canvas.getContext('2d');
 
+    // background
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const pos = calcPosition(data[currentTab] || []);
+    const live = livePrices[currentTab] || 0;
+
+    const value = pos.qty * live;
+    const pl = value - pos.modal;
+    const pct = pos.modal > 0 ? (pl / pos.modal) * 100 : 0;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 32px Arial";
+    ctx.fillText("DCA Tracker Pro", 40, 60);
+
+    ctx.font = "24px Arial";
+    ctx.fillText(`Asset : ${currentTab}`, 40, 140);
+    ctx.fillText(`Avg Price : $${fmt(pos.avg)}`, 40, 190);
+    ctx.fillText(`Live Price : $${fmt(live)}`, 40, 240);
+    ctx.fillText(`Holdings : ${pos.qty.toFixed(6)}`, 40, 290);
+
+    ctx.fillStyle = pct >= 0 ? "#22c55e" : "#ef4444";
+    ctx.font = "bold 42px Arial";
+    ctx.fillText(`P/L : ${pct.toFixed(2)}%`, 40, 380);
+
+    const link = document.createElement('a');
+    link.download = `PL-${currentTab}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+}
 function initChart() {
     const ctx = document.getElementById('performanceChart'); if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
