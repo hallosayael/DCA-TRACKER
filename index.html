@@ -517,30 +517,35 @@ function exportCSV() {
     const lp = livePrices[currentTab] || 0;
     const pnl = (pos.qty * lp) - pos.modal;
 
-    // 1. Tambahkan Header Ringkasan agar user langsung tahu status asetnya
-    let csv = `REKAPITULASI ASSET: ${currentTab}\n`;
-    csv += `Total Qty,Avg Price,Total Modal,Market Value,Profit/Loss\n`;
-    csv += `${pos.qty.toFixed(6)},${pos.avg.toFixed(2)},${pos.modal.toFixed(2)},${(pos.qty * lp).toFixed(2)},${pnl.toFixed(2)}\n\n`;
+    // Header untuk file agar Excel mengenali pemisah kolom (separator)
+    let csv = "sep=,\n"; 
 
-    // 2. Header untuk Riwayat Transaksi
-    csv += "RIWAYAT TRANSAKSI\n";
-    csv += "Tipe,Tanggal,Harga,Nominal,Qty\n";
+    // Bagian 1: RINGKASAN POSISI
+    csv += `RINGKASAN POSISI ASET: ${currentTab}\n`;
+    csv += `Keterangan,Nilai\n`;
+    csv += `Total Quantity,${pos.qty.toFixed(8)}\n`;
+    csv += `Average Buy Price,$${pos.avg.toFixed(2)}\n`;
+    csv += `Total Net Investment,$${pos.modal.toFixed(2)}\n`;
+    csv += `Current Market Value,$${(pos.qty * lp).toFixed(2)}\n`;
+    csv += `Floating Profit/Loss,$${pnl.toFixed(2)}\n`;
+    csv += `Profit/Loss %,${(pos.modal > 0 ? (pnl/pos.modal*100) : 0).toFixed(2)}%\n\n`;
 
-    // 3. Isi Data Transaksi
+    // Bagian 2: DETAIL TRANSAKSI
+    csv += `DETAIL RIWAYAT TRANSAKSI\n`;
+    csv += `Tipe,Tanggal,Harga Asset,Nominal Investasi,Quantity Didapat\n`;
+
     (data[currentTab] || []).forEach(d => {
-        // Gunakan titik sebagai desimal agar tidak merusak format kolom CSV
-        csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`;
+        // Menggunakan format yang bersih untuk Excel
+        csv += `${d.tipe},${d.tanggal},${d.harga.toFixed(2)},${d.nominal.toFixed(2)},${d.qty.toFixed(8)}\n`;
     });
 
-    // 4. Proses Download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    // Proses Download dengan BOM agar karakter khusus (seperti $) terbaca benar di Excel
+    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `DCA_Report_${currentTab}_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
+    link.setAttribute('download', `DCA_Dashboard_${currentTab}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
