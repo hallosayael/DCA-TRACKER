@@ -244,15 +244,21 @@ function openCalc() {
     const q = pos.qty;
     const avg = pos.avg;
 
+    const live = livePrices[currentTab] || 0;
+
     document.getElementById('calcCurrentInfo').innerText =
         `Saldo Saat Ini: ${q.toFixed(6)} | Avg: $${fmt(avg)}`;
 
     document.getElementById('calcNominal').value = "";
-    document.getElementById('calcPrice').value = "";
+    document.getElementById('calcPrice').value = live > 0 ? live : "";
+    
     document.getElementById('resAvg').innerText = "$0.00";
     document.getElementById('resDiff').innerText = "Penurunan Avg: 0%";
+    document.getElementById('resDiff').style.color = "var(--text-muted)";
 
     document.getElementById('calcModal').classList.add('active');
+
+    calculateDCA(); // langsung hitung jika live price ada
 }
 
 function closeCalc() { document.getElementById('calcModal').classList.remove('active'); }
@@ -271,11 +277,22 @@ function calculateDCA() {
     const newModal = m + nominal;
     const newAvg = newModal / newQty;
 
-    const diff = ((pos.avg - newAvg) / pos.avg) * 100;
+    const diffPct = ((newAvg - pos.avg) / pos.avg) * 100;
 
-    document.getElementById('resAvg').innerText = "$" + fmt(newAvg);
-    document.getElementById('resDiff').innerText =
-        `Penurunan Avg: ${diff.toFixed(2)}%`;
+    const resAvg = document.getElementById('resAvg');
+    const resDiff = document.getElementById('resDiff');
+
+    resAvg.innerText = "$" + fmt(newAvg);
+
+    if (diffPct > 0) {
+        // AVG NAIK (jelek)
+        resDiff.innerText = `Avg Naik: +${diffPct.toFixed(2)}%`;
+        resDiff.style.color = "var(--danger)";
+    } else {
+        // AVG TURUN (bagus)
+        resDiff.innerText = `Avg Turun: ${diffPct.toFixed(2)}%`;
+        resDiff.style.color = "var(--success)";
+    }
 }
 
 async function checkUser() {
