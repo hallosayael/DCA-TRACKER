@@ -437,6 +437,29 @@ function initChart() {
 }
 
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+async function fetchPrices() {
+    try {
+        const ids = assets.map(a => a.geckoId).join(',');
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+        const json = await res.json();
+
+        assets.forEach(a => {
+            if (json[a.geckoId]) {
+                livePrices[a.id] = json[a.geckoId].usd;
+            }
+        });
+
+        isApiOnline = true;
+        const ind = document.getElementById('liveStatus');
+        if (ind) ind.classList.remove('offline');
+
+        render();
+    } catch (e) {
+        isApiOnline = false;
+        const ind = document.getElementById('liveStatus');
+        if (ind) ind.classList.add('offline');
+    }
+}
 function togglePrivacy() { privacy = !privacy; render(); }
 (async () => { await fetchPrices(); await checkUser(); setInterval(fetchPrices, 60000); })();
 </script>
