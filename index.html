@@ -420,68 +420,65 @@ function render() {
     }
 }
 
-function generateShareImage() {
-    if (currentTab === "SUMMARY") {
-        alert("Pilih koin spesifik.");
-        return;
-    }
+    function generateShareImage() {
 
-    const asset = assets.find(a => a.id === currentTab);
-    const canvas = document.getElementById("shareCanvas");
-    const ctx = canvas.getContext("2d");
+if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
 
-    const pos = calcPosition(data[currentTab] || []);
-    const lp = livePrices[currentTab] || 0;
+const asset = assets.find(a => a.id === currentTab);
 
-    const value = pos.qty * lp;
-    const pl = value - pos.modal;
-    const pct = pos.modal > 0 ? (pl / pos.modal) * 100 : 0;
-    const isProfit = pl >= 0;
+const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
 
-    // Background
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
 
-    // Title
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 32px Arial";
-    ctx.fillText(`${asset.name} Performance`, 50, 70);
+const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
 
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "18px Arial";
-    ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
+const isP = p >= 0;
 
-    // Percentage
-    ctx.fillStyle = isProfit ? "#10b981" : "#ef4444";
-    ctx.font = "bold 110px Arial";
-    ctx.fillText(`${isProfit ? "+" : ""}${pct.toFixed(2)}%`, 50, 250);
+const draw = (img = null) => {
 
-    // Labels
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "16px Arial";
-    ctx.fillText("AVG BUY", 50, 340);
-    ctx.fillText("LAST PRICE", 300, 340);
-    ctx.fillText("ASSET", 550, 340);
+ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
 
-    // Values
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 28px Arial";
-    ctx.fillText(`$${fmt(pos.avg)}`, 50, 380);
-    ctx.fillText(`$${fmt(lp)}`, 300, 380);
-    ctx.fillText(currentTab, 550, 380);
+ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 70);
 
-    // Download
-    const link = document.createElement("a");
-    link.download = `PNL_${currentTab}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+ctx.fillStyle = "#64748b"; ctx.font = "500 18px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
+
+ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 120px Inter"; ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
+
+ctx.font = "bold 24px Inter"; ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
+
+ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
+
+ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText("AVG BUY", 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("ASSET", 550, 385);
+
+ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
+
+ctx.textAlign = "right";
+
+if (img) { ctx.drawImage(img, 650, 40, 100, 100); ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110); }
+
+else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab}`, 750, 110); }
+
+ctx.textAlign = "left"; ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
+
+const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
+
+};
+
+const logoImg = new Image(); logoImg.crossOrigin = "anonymous"; logoImg.onload = () => draw(logoImg); logoImg.onerror = () => draw(); logoImg.src = asset.logo;
+
 }
 
+
 function exportCSV() {
-    if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
-    let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
-    (data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
-    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
+
+if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+
+let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
+
+(data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
+
+const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
+
 }
 
 function initChart() {
