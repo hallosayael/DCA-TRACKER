@@ -420,54 +420,95 @@ function render() {
     }
 }
 
-    function generateShareImage() {
+function generateShareImage() {
+    if (currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
 
-if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+    const asset = assets.find(a => a.id === currentTab);
+    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
 
-const asset = assets.find(a => a.id === currentTab);
+    // MENGGUNAKAN LOGIKA YANG SAMA DENGAN DASHBOARD
+    const pos = calcPosition(data[currentTab] || []);
+    
+    // Jika tidak ada saldo, jangan generate
+    if (pos.qty <= 0) return alert("Tidak ada saldo untuk dibagikan.");
 
-const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
+    const lp = livePrices[currentTab] || 0;
+    const currentMarketValue = pos.qty * lp;
+    const p = currentMarketValue - pos.modal;
+    const pct = pos.modal > 0 ? (p / pos.modal * 100) : 0;
+    const isP = p >= 0;
 
-let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+    const draw = (img = null) => {
+        // Background
+        ctx.fillStyle = "#0f172a"; 
+        ctx.fillRect(0, 0, 800, 450);
 
-const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
+        // Header
+        ctx.fillStyle = "white"; 
+        ctx.font = "bold 32px Inter"; 
+        ctx.fillText(`${asset.name} Performance`, 50, 70);
 
-const isP = p >= 0;
+        ctx.fillStyle = "#64748b"; 
+        ctx.font = "500 18px Inter"; 
+        ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
 
-const draw = (img = null) => {
+        // Persentase PNL
+        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; 
+        ctx.font = "bold 120px Inter"; 
+        ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
 
-ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,800,450);
+        ctx.font = "bold 24px Inter"; 
+        ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
 
-ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} Performance`, 50, 70);
+        // Garis Pemisah
+        ctx.strokeStyle = "#334155"; 
+        ctx.lineWidth = 1; 
+        ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
 
-ctx.fillStyle = "#64748b"; ctx.font = "500 18px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
+        // Footer Labels
+        ctx.fillStyle = "#94a3b8"; 
+        ctx.font = "700 14px Inter"; 
+        ctx.fillText("AVG BUY", 50, 385); 
+        ctx.fillText("LAST PRICE", 300, 385); 
+        ctx.fillText("ASSET", 550, 385);
 
-ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 120px Inter"; ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
+        // Footer Values (Menggunakan pos.avg yang sudah dihitung calcPosition)
+        ctx.fillStyle = "white"; 
+        ctx.font = "bold 28px Inter"; 
+        ctx.fillText("$" + fmt(pos.avg), 50, 420); 
+        ctx.fillText("$" + fmt(lp), 300, 420); 
+        ctx.fillText(currentTab, 550, 420);
 
-ctx.font = "bold 24px Inter"; ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
+        // Logo & Watermark
+        ctx.textAlign = "right";
+        if (img) { 
+            ctx.drawImage(img, 650, 40, 100, 100); 
+            ctx.fillStyle = asset.color; 
+            ctx.font = "bold 80px Inter"; 
+            ctx.fillText(currentTab, 640, 110); 
+        } else { 
+            ctx.fillStyle = asset.color; 
+            ctx.font = "bold 80px Inter"; 
+            ctx.fillText(`${currentTab}`, 750, 110); 
+        }
 
-ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
+        ctx.textAlign = "left"; 
+        ctx.fillStyle = "#334155"; 
+        ctx.fillRect(0, 445, 800, 5);
 
-ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText("AVG BUY", 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("ASSET", 550, 385);
+        // Download
+        const link = document.createElement('a'); 
+        link.download = `PNL_${currentTab}.png`; 
+        link.href = canvas.toDataURL(); 
+        link.click();
+    };
 
-ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText("$" + fmt(m/q || 0), 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(currentTab, 550, 420);
-
-ctx.textAlign = "right";
-
-if (img) { ctx.drawImage(img, 650, 40, 100, 100); ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 640, 110); }
-
-else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(`${currentTab}`, 750, 110); }
-
-ctx.textAlign = "left"; ctx.fillStyle = "#334155"; ctx.fillRect(0, 445, 800, 5);
-
-const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
-
-};
-
-const logoImg = new Image(); logoImg.crossOrigin = "anonymous"; logoImg.onload = () => draw(logoImg); logoImg.onerror = () => draw(); logoImg.src = asset.logo;
-
+    const logoImg = new Image(); 
+    logoImg.crossOrigin = "anonymous"; 
+    logoImg.onload = () => draw(logoImg); 
+    logoImg.onerror = () => draw(); 
+    logoImg.src = asset.logo;
 }
-
 
 function exportCSV() {
 
