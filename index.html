@@ -240,16 +240,42 @@ let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}
 
 function openCalc() {
     const pos = calcPosition(data[currentTab] || []);
-let m = pos.modal;
-let q = pos.qty;
+    const m = pos.modal;
+    const q = pos.qty;
+    const avg = pos.avg;
+
+    document.getElementById('calcCurrentInfo').innerText =
+        `Saldo Saat Ini: ${q.toFixed(6)} | Avg: $${fmt(avg)}`;
+
+    document.getElementById('calcNominal').value = "";
+    document.getElementById('calcPrice').value = "";
+    document.getElementById('resAvg').innerText = "$0.00";
+    document.getElementById('resDiff').innerText = "Penurunan Avg: 0%";
+
+    document.getElementById('calcModal').classList.add('active');
 }
 
 function closeCalc() { document.getElementById('calcModal').classList.remove('active'); }
 
 function calculateDCA() {
-const pos = calcPosition(data[currentTab] || []);
-let m = pos.modal;
-let q = pos.qty;
+    const pos = calcPosition(data[currentTab] || []);
+    const m = pos.modal;
+    const q = pos.qty;
+
+    const nominal = Number(document.getElementById('calcNominal').value);
+    const price = Number(document.getElementById('calcPrice').value);
+
+    if (!nominal || !price || q <= 0) return;
+
+    const newQty = q + (nominal / price);
+    const newModal = m + nominal;
+    const newAvg = newModal / newQty;
+
+    const diff = ((pos.avg - newAvg) / pos.avg) * 100;
+
+    document.getElementById('resAvg').innerText = "$" + fmt(newAvg);
+    document.getElementById('resDiff').innerText =
+        `Penurunan Avg: ${diff.toFixed(2)}%`;
 }
 
 async function checkUser() {
@@ -435,7 +461,9 @@ function generateShareImage() {
     if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
     const asset = assets.find(a => a.id === currentTab);
     const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
-    let m = 0, q = 0; data[currentTab]?.forEach(d => { m += d.tipe === 'BUY' ? d.nominal : -d.nominal; q += d.qty; });
+    const pos = calcPosition(data[currentTab] || []);
+	const m = pos.modal;
+	const q = pos.qty;
     const lp = livePrices[currentTab] || 0, p = (q * lp) - m, pct = m > 0 ? (p/m*100) : 0;
     const isP = p >= 0;
     const draw = (img = null) => {
