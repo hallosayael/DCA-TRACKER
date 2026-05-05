@@ -511,15 +511,39 @@ function generateShareImage() {
 }
 
 function exportCSV() {
+    if (currentTab === "SUMMARY") return alert("Pilih koin spesifik untuk ekspor.");
 
-if(currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+    const pos = calcPosition(data[currentTab] || []);
+    const lp = livePrices[currentTab] || 0;
+    const pnl = (pos.qty * lp) - pos.modal;
 
-let csv = "Tipe,Tanggal,Harga,Nominal,Qty\n";
+    // 1. Tambahkan Header Ringkasan agar user langsung tahu status asetnya
+    let csv = `REKAPITULASI ASSET: ${currentTab}\n`;
+    csv += `Total Qty,Avg Price,Total Modal,Market Value,Profit/Loss\n`;
+    csv += `${pos.qty.toFixed(6)},${pos.avg.toFixed(2)},${pos.modal.toFixed(2)},${(pos.qty * lp).toFixed(2)},${pnl.toFixed(2)}\n\n`;
 
-(data[currentTab] || []).forEach(d => csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`);
+    // 2. Header untuk Riwayat Transaksi
+    csv += "RIWAYAT TRANSAKSI\n";
+    csv += "Tipe,Tanggal,Harga,Nominal,Qty\n";
 
-const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = `DCA_${currentTab}.csv`; link.click();
+    // 3. Isi Data Transaksi
+    (data[currentTab] || []).forEach(d => {
+        // Gunakan titik sebagai desimal agar tidak merusak format kolom CSV
+        csv += `${d.tipe},${d.tanggal},${d.harga},${d.nominal},${d.qty}\n`;
+    });
 
+    // 4. Proses Download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `DCA_Report_${currentTab}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function initChart() {
