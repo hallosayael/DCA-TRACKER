@@ -323,12 +323,35 @@ async function loadData() {
 async function tambah() {
     const tipe = document.getElementById("tipe").value, tgl = document.getElementById("tanggal").value;
     const harga = Number(document.getElementById("harga").value), nominal = Number(document.getElementById("nominal").value);
+    
     if(!tgl || !harga || !nominal) return alert("Lengkapi data!");
-    let curQ = (data[currentTab] || []).reduce((a, b) => a + b.qty, 0);
-    let qtyIn = nominal/harga;
-    if(tipe === "SELL" && qtyIn > (curQ + 0.00000001)) return alert("Saldo tidak cukup!");
-    await _supabase.from('transaksi').insert([{ user_id: currentUser.id, asset_id: currentTab, tipe, tanggal: tgl, harga, nominal, qty: tipe === "BUY" ? qtyIn : -qtyIn }]);
-    loadData(); document.getElementById("harga").value = ""; document.getElementById("nominal").value = "";
+
+    // MENGGUNAKAN FUNGSI POSISI YANG SUDAH ADA
+    const pos = calcPosition(data[currentTab] || []);
+    let qtyIn = nominal / harga;
+
+    // VALIDASI: Gunakan toleransi angka desimal yang lebih besar jika ingin SELL ALL
+    if (tipe === "SELL") {
+        // Jika selisih kuantitas sangat kecil (misal mau jual semua), 
+        // kita anggap saldo cukup untuk menghindari error pembulatan desimal
+        if (qtyIn > (pos.qty + 0.0001)) {
+            return alert(`Saldo tidak cukup! Sisa saldo qty Anda: ${pos.qty.toFixed(6)}`);
+        }
+    }
+
+    await _supabase.from('transaksi').insert([{ 
+        user_id: currentUser.id, 
+        asset_id: currentTab, 
+        tipe, 
+        tanggal: tgl, 
+        harga, 
+        nominal, 
+        qty: tipe === "BUY" ? qtyIn : -qtyIn 
+    }]);
+
+    loadData(); 
+    document.getElementById("harga").value = ""; 
+    document.getElementById("nominal").value = "";
 }
 
 function openModal(id) {
