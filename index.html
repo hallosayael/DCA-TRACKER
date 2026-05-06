@@ -359,11 +359,12 @@ function switchTab(id) {
     render();
 }
 
+// Gantilah bagian fungsi render() Anda dengan ini agar lebih aman
 function render() {
     const tbody = document.getElementById("tabel"), tableHead = document.getElementById("tableHead");
     const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState");
     const summaryArea = document.getElementById("summaryArea");
-    const livePriceEl = document.getElementById("livePrice"), statusInd = document.getElementById("liveStatus");
+    const livePriceEl = document.getElementById("livePrice");
     
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
 
@@ -372,47 +373,47 @@ function render() {
         let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
 
         assets.forEach(a => {
-const pos = calcPosition(data[a.id] || []);
-if (data[a.id].length > 0) { // Tampilkan asal pernah ada transaksi
-    hasD = true;
-    let lp = livePrices[a.id] || 0, v = pos.qty * lp;
-    let p, pPct, statusText, plClass;
+            const transData = data[a.id] || [];
+            // CEK: Hanya buat kartu jika koin ini punya riwayat transaksi
+            if (transData.length > 0) { 
+                hasD = true;
+                const pos = calcPosition(transData);
+                let lp = livePrices[a.id] || 0, v = pos.qty * lp;
+                let p, pPct, statusText, plClass;
 
-    if (pos.qty > 0.00000001) {
-        // Logika Floating (Masih ada saldo)
-        p = v - pos.modal;
-        pPct = (p / pos.modal * 100);
-        statusText = p >= 0 ? '▲' : '▼';
-        plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
-        totalM += pos.modal; totalV += v;
-    } else {
-        // Logika Realized (Sudah habis terjual)
-        p = pos.realizedPL;
-        pPct = (p / pos.totalInvested * 100);
-        statusText = p >= 0 ? '💰 Final' : '🔴 Final';
-        plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
-    }
+                if (pos.qty > 0.00000001) {
+                    p = v - pos.modal;
+                    pPct = (p / pos.modal * 100);
+                    statusText = p >= 0 ? '▲' : '▼';
+                    plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
+                    totalM += pos.modal; totalV += v;
+                } else {
+                    p = pos.realizedPL;
+                    pPct = pos.totalInvested > 0 ? (p / pos.totalInvested * 100) : 0;
+                    statusText = p >= 0 ? '💰 Final' : '🔴 Final';
+                    plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
+                }
 
-    cardsHtml += `
-    <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
-        <div class="asset-header">
-            <div class="asset-name-box">
-                <img src="${a.logo}" class="asset-logo-sm">
-                <span class="asset-symbol">${a.id}</span>
-            </div>
-            <div class="asset-pl-badge ${plClass}">
-                ${statusText} ${pPct.toFixed(2)}%
-            </div>
-        </div>
-        <div class="asset-body">
-            <div><div class="asset-label">Avg Price</div><div class="asset-val">${pos.qty > 0 ? '$' + fmt(pos.avg) : '-'}</div></div>
-            <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div></div>
-            <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
-            <div><div class="asset-label">Total P/L</div><div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div></div>
-        </div>
-        <img src="${a.logo}" class="asset-bg-logo">
-    </div>`;
-}
+                cardsHtml += `
+                <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
+                    <div class="asset-header">
+                        <div class="asset-name-box">
+                            <img src="${a.logo}" class="asset-logo-sm">
+                            <span class="asset-symbol">${a.id}</span>
+                        </div>
+                        <div class="asset-pl-badge ${plClass}">
+                            ${statusText} ${pPct.toFixed(2)}%
+                        </div>
+                    </div>
+                    <div class="asset-body">
+                        <div><div class="asset-label">Avg Price</div><div class="asset-val">${pos.qty > 0 ? '$' + fmt(pos.avg) : '-'}</div></div>
+                        <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div></div>
+                        <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
+                        <div><div class="asset-label">Total P/L</div><div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div></div>
+                    </div>
+                    <img src="${a.logo}" class="asset-bg-logo">
+                </div>`;
+            }
         });
 
         summaryArea.innerHTML = cardsHtml;
@@ -420,28 +421,36 @@ if (data[a.id].length > 0) { // Tampilkan asal pernah ada transaksi
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
         document.getElementById("upl").innerText = privacy ? "••••" : (tUPL>=0?"+":"") + "$" + fmt(tUPL);
         document.getElementById("uplPct").innerText = tPct.toFixed(2) + "%";
-        container.className = "hidden";
+        
+        container.classList.add("hidden");
         empty.className = hasD ? "hidden" : "empty-state";
     } else {
+        // Logika untuk Tab Koin Individu (BTC, ETH, dll)
         summaryArea.classList.add('hidden');
         tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
         let rows = "";
-        const pos = calcPosition(data[currentTab] || []);
-        (data[currentTab] || []).forEach(d => {
+        const currentData = data[currentTab] || [];
+        const pos = calcPosition(currentData);
+        
+        currentData.forEach(d => {
             rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
         });
+        
         tbody.innerHTML = rows;
-        container.className = (data[currentTab]||[]).length ? "table-wrapper" : "hidden";
-        empty.className = (data[currentTab]||[]).length ? "hidden" : "empty-state";
+        container.className = currentData.length ? "table-wrapper" : "hidden";
+        empty.className = currentData.length ? "hidden" : "empty-state";
         
         let lp = livePrices[currentTab] || 0, v = pos.qty * lp, p = v - pos.modal, pct = pos.modal > 0 ? (p/pos.modal*100) : 0;
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(pos.modal);
-        if (isApiOnline && lp > 0) {
+        
+        if (lp > 0) {
             livePriceEl.innerText = "$" + fmt(lp);
             document.getElementById("upl").innerText = privacy ? "••••" : (p>=0?"+":"") + "$" + fmt(p);
             document.getElementById("uplPct").innerText = pct.toFixed(2) + "%";
             document.getElementById("upl").className = "stat-value " + (p>=0?"profit":"loss");
             document.getElementById("uplPct").className = "stat-value " + (p>=0?"profit":"loss");
+        } else {
+            livePriceEl.innerText = "Fetching...";
         }
     }
 }
