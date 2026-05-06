@@ -441,9 +441,14 @@ function render() {
 
         summaryArea.innerHTML = cardsHtml;
         let tUPL = totalV - totalM, tPct = totalM > 0 ? (tUPL/totalM*100) : 0;
+       // 1. Update Teks
         document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
         document.getElementById("upl").innerText = privacy ? "••••" : (tUPL>=0?"+":"") + "$" + fmt(tUPL);
         document.getElementById("uplPct").innerText = tPct.toFixed(2) + "%";
+
+        // 2. TAMBAHKAN DUA BARIS INI (Update Warna):
+        document.getElementById("upl").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
+        document.getElementById("uplPct").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
         
         container.classList.add("hidden");
         empty.className = hasD ? "hidden" : "empty-state";
