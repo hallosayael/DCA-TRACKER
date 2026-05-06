@@ -239,24 +239,34 @@ let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}
 
 // Fungsi Inti: Menghitung posisi berdasarkan Average Price
 function calcPosition(list) {
-    let qty = 0, modal = 0;
+    let qty = 0, modalRemaining = 0, realizedPL = 0, totalBuyNominal = 0;
+    
     list.forEach(d => {
         if (d.tipe === 'BUY') {
             qty += d.qty;
-            modal += d.nominal;
+            modalRemaining += d.nominal;
+            totalBuyNominal += d.nominal;
         } else {
             if (qty > 0) {
-                const avg = modal / qty;
+                const avgBuyPrice = modalRemaining / qty;
                 const qtySell = Math.abs(d.qty);
-                modal -= avg * qtySell; // Modal dikurangi proporsional terhadap harga rata-rata beli
+                const costOfSoldQty = avgBuyPrice * qtySell;
+                
+                // Realized P/L = Hasil Jual - Modal proporsional koin yang dijual
+                realizedPL += (Math.abs(d.nominal) - costOfSoldQty);
+                
+                modalRemaining -= costOfSoldQty;
                 qty -= qtySell;
             }
         }
     });
+
     return {
         qty: Math.max(0, qty),
-        modal: Math.max(0, modal),
-        avg: qty > 0.00000001 ? modal / qty : 0
+        modal: Math.max(0, modalRemaining),
+        avg: qty > 0.00000001 ? modalRemaining / qty : 0,
+        realizedPL: realizedPL,
+        totalInvested: totalBuyNominal
     };
 }
 
@@ -362,31 +372,47 @@ function render() {
         let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
 
         assets.forEach(a => {
-            const pos = calcPosition(data[a.id] || []);
-            if (pos.qty > 0.00000001) {
-                hasD = true; 
-                let lp = livePrices[a.id] || 0, v = pos.qty * lp, p = v - pos.modal, pPct = (p/pos.modal*100);
-                totalM += pos.modal; totalV += v;
-                cardsHtml += `
-                <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
-                    <div class="asset-header">
-                        <div class="asset-name-box">
-                            <img src="${a.logo}" class="asset-logo-sm">
-                            <span class="asset-symbol">${a.id}</span>
-                        </div>
-                        <div class="asset-pl-badge ${p >= 0 ? 'pl-profit' : 'pl-loss'}">
-                            ${p >= 0 ? '▲' : '▼'} ${pPct.toFixed(2)}%
-                        </div>
-                    </div>
-                    <div class="asset-body">
-                        <div><div class="asset-label">Avg Price</div><div class="asset-val">$${fmt(pos.avg)}</div></div>
-                        <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div></div>
-                        <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
-                        <div><div class="asset-label">Profit/Loss</div><div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div></div>
-                    </div>
-                    <img src="${a.logo}" class="asset-bg-logo">
-                </div>`;
-            }
+const pos = calcPosition(data[a.id] || []);
+if (data[a.id].length > 0) { // Tampilkan asal pernah ada transaksi
+    hasD = true;
+    let lp = livePrices[a.id] || 0, v = pos.qty * lp;
+    let p, pPct, statusText, plClass;
+
+    if (pos.qty > 0.00000001) {
+        // Logika Floating (Masih ada saldo)
+        p = v - pos.modal;
+        pPct = (p / pos.modal * 100);
+        statusText = p >= 0 ? '▲' : '▼';
+        plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
+        totalM += pos.modal; totalV += v;
+    } else {
+        // Logika Realized (Sudah habis terjual)
+        p = pos.realizedPL;
+        pPct = (p / pos.totalInvested * 100);
+        statusText = p >= 0 ? '💰 Final' : '🔴 Final';
+        plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
+    }
+
+    cardsHtml += `
+    <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
+        <div class="asset-header">
+            <div class="asset-name-box">
+                <img src="${a.logo}" class="asset-logo-sm">
+                <span class="asset-symbol">${a.id}</span>
+            </div>
+            <div class="asset-pl-badge ${plClass}">
+                ${statusText} ${pPct.toFixed(2)}%
+            </div>
+        </div>
+        <div class="asset-body">
+            <div><div class="asset-label">Avg Price</div><div class="asset-val">${pos.qty > 0 ? '$' + fmt(pos.avg) : '-'}</div></div>
+            <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div></div>
+            <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
+            <div><div class="asset-label">Total P/L</div><div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div></div>
+        </div>
+        <img src="${a.logo}" class="asset-bg-logo">
+    </div>`;
+}
         });
 
         summaryArea.innerHTML = cardsHtml;
@@ -426,16 +452,29 @@ function generateShareImage() {
     const asset = assets.find(a => a.id === currentTab);
     const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
 
-    // MENGGUNAKAN LOGIKA YANG SAMA DENGAN DASHBOARD
+    // Ambil data posisi dari fungsi calcPosition yang sudah diperbarui
     const pos = calcPosition(data[currentTab] || []);
-    
-    // Jika tidak ada saldo, jangan generate
-    if (pos.qty <= 0) return alert("Tidak ada saldo untuk dibagikan.");
-
     const lp = livePrices[currentTab] || 0;
-    const currentMarketValue = pos.qty * lp;
-    const p = currentMarketValue - pos.modal;
-    const pct = pos.modal > 0 ? (p / pos.modal * 100) : 0;
+    
+    let p, pct, label, footerTitle, footerValue;
+
+    // LOGIKA PEMISAH: CEK APAKAH SALDO MASIH ADA ATAU SUDAH HABIS
+    if (pos.qty > 0.00000001) {
+        // KONDISI MASIH HOLDING (Floating P/L)
+        p = (pos.qty * lp) - pos.modal;
+        pct = pos.modal > 0 ? (p / pos.modal * 100) : 0;
+        label = p >= 0 ? "PROFIT" : "LOSS";
+        footerTitle = "AVG BUY";
+        footerValue = "$" + fmt(pos.avg);
+    } else {
+        // KONDISI SUDAH TERJUAL HABIS (Realized P/L)
+        p = pos.realizedPL;
+        pct = pos.totalInvested > 0 ? (p / pos.totalInvested * 100) : 0;
+        label = p >= 0 ? "FINAL PROFIT" : "FINAL LOSS";
+        footerTitle = "TOTAL P/L";
+        footerValue = (p >= 0 ? "+" : "") + "$" + fmt(p);
+    }
+
     const isP = p >= 0;
 
     const draw = (img = null) => {
@@ -446,19 +485,20 @@ function generateShareImage() {
         // Header
         ctx.fillStyle = "white"; 
         ctx.font = "bold 32px Inter"; 
-        ctx.fillText(`${asset.name} Performance`, 50, 70);
+        ctx.fillText(`${asset.name} ${pos.qty > 0 ? 'Performance' : 'Closed Position'}`, 50, 70);
 
         ctx.fillStyle = "#64748b"; 
         ctx.font = "500 18px Inter"; 
         ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
 
-        // Persentase PNL
+        // Persentase PNL (Besar)
         ctx.fillStyle = isP ? "#10b981" : "#ef4444"; 
         ctx.font = "bold 120px Inter"; 
         ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
 
+        // Sub-label (PROFIT / LOSS / FINAL PROFIT)
         ctx.font = "bold 24px Inter"; 
-        ctx.fillText(isP ? "PROFIT" : "LOSS", 50, 310);
+        ctx.fillText(label, 50, 310);
 
         // Garis Pemisah
         ctx.strokeStyle = "#334155"; 
@@ -468,16 +508,16 @@ function generateShareImage() {
         // Footer Labels
         ctx.fillStyle = "#94a3b8"; 
         ctx.font = "700 14px Inter"; 
-        ctx.fillText("AVG BUY", 50, 385); 
+        ctx.fillText(footerTitle, 50, 385); // Dinamis: AVG BUY atau TOTAL P/L
         ctx.fillText("LAST PRICE", 300, 385); 
-        ctx.fillText("ASSET", 550, 385);
+        ctx.fillText("STATUS", 550, 385);
 
-        // Footer Values (Menggunakan pos.avg yang sudah dihitung calcPosition)
+        // Footer Values
         ctx.fillStyle = "white"; 
         ctx.font = "bold 28px Inter"; 
-        ctx.fillText("$" + fmt(pos.avg), 50, 420); 
+        ctx.fillText(footerValue, 50, 420); 
         ctx.fillText("$" + fmt(lp), 300, 420); 
-        ctx.fillText(currentTab, 550, 420);
+        ctx.fillText(pos.qty > 0 ? "HOLDING" : "SOLD OUT", 550, 420);
 
         // Logo & Watermark
         ctx.textAlign = "right";
@@ -509,7 +549,7 @@ function generateShareImage() {
     logoImg.onerror = () => draw(); 
     logoImg.src = asset.logo;
 }
-
+    
 function exportCSV() {
     if (currentTab === "SUMMARY") return alert("Pilih koin spesifik untuk ekspor.");
 
