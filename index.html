@@ -780,9 +780,6 @@ async function fetchPrices() {
 function togglePrivacy() { privacy = !privacy; render(); }
 
 (async () => { 
-  localStorage.clear();
-  sessionStorage.clear();
-
   await fetchPrices(); 
   await checkUser(); 
   setInterval(fetchPrices, 60000); 
