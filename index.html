@@ -393,8 +393,15 @@ async function checkUser() {
         renderTabs(); switchTab("SUMMARY"); loadData();
     } else { document.getElementById('authScreen').classList.remove('hidden'); }
 }
-async function login() { await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
-async function logout() { await _supabase.auth.signOut(); location.reload(); }
+
+async function login() {
+  await _supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: "https://nabungcrypto.vercel.app"
+    }
+  });
+}
 
 async function loadData() {
     if (!currentUser) return;
