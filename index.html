@@ -74,7 +74,7 @@
             background:transparent;font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
         .tab.on{background:#fff;color:var(--ink);box-shadow:0 8px 16px -8px rgba(40,50,120,.3)}
         .tab-logo{width:20px;height:20px;border-radius:50%}
-        .tab-ic{font-size:16px;line-height:1}
+        .tab-ic{width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1}
 
         /* ---------- SUMMARY ---------- */
         .hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#232a63,#3a2a72);border-radius:22px;
@@ -164,11 +164,11 @@
             .tabs{position:fixed;bottom:10px;left:14px;right:14px;margin:0;z-index:1500;
                 background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);
                 border-radius:22px;padding:10px 8px;box-shadow:0 12px 30px rgba(40,50,120,.2);justify-content:space-around}
-            .tab{flex:1;flex-direction:column;gap:5px;padding:6px 2px;font-size:9px}
-            .tab-logo{width:24px;height:24px;filter:grayscale(1);opacity:.5;transition:.2s}
-            .tab-ic{filter:grayscale(0)}
+            .tab{flex:1;flex-direction:column;gap:5px;padding:6px 2px;font-size:9px;min-width:0}
+            .tab-logo{width:26px;height:26px;filter:grayscale(1);opacity:.5;transition:.2s}
+            .tab-ic{width:26px;height:26px;font-size:23px;filter:grayscale(0)}
             .tab.on{background:transparent;box-shadow:none;color:var(--ink)}
-            .tab.on .tab-logo{filter:grayscale(0);opacity:1;transform:scale(1.1)}
+            .tab.on .tab-logo,.tab.on .tab-ic{filter:grayscale(0);opacity:1;transform:scale(1.1)}
         }
         @media(prefers-reduced-motion:reduce){.auth-overlay .mesh{animation:none}}
     </style>
