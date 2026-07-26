@@ -6,7 +6,9 @@
     <title>Nabung Crypto Pro - Cloud Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
 
     <style>
         :root {
@@ -306,9 +308,18 @@
 <canvas id="shareCanvas" width="800" height="450"></canvas>
 
 <script>
-const SUPABASE_URL = 'https://iuqzuuyihrnangontxft.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_-26nDiKXaT6IkPJiTplAdQ_CV5H-MHm';
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const firebaseConfig = {
+    apiKey: "AIzaSyDriG9XQwGge-nSkTc8UWOQMa7zODMErn4",
+    authDomain: "website-portfolio-crypto.firebaseapp.com",
+    projectId: "website-portfolio-crypto",
+    storageBucket: "website-portfolio-crypto.firebasestorage.app",
+    messagingSenderId: "502021325846",
+    appId: "1:502021325846:web:25663b081bc008d1e2a137",
+    measurementId: "G-KQNM0M1B9Y"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
 const assets = [
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png' },
@@ -383,31 +394,39 @@ function calculateDCA() {
     }
 }
 
-async function checkUser() {
-    const { data: { user } } = await _supabase.auth.getUser();
+function login() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(err => alert("Login gagal: " + err.message));
+}
+
+function logout() {
+    auth.signOut();
+}
+
+auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
         document.getElementById('userEmail').innerText = user.email;
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('appScreen').classList.remove('hidden');
         renderTabs(); switchTab("SUMMARY"); loadData();
-    } else { document.getElementById('authScreen').classList.remove('hidden'); }
-}
-
-async function login() {
-  await _supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: "https://nabungcrypto.vercel.app"
+    } else {
+        currentUser = null;
+        data = {};
+        document.getElementById('appScreen').classList.add('hidden');
+        document.getElementById('authScreen').classList.remove('hidden');
     }
-  });
-}
+});
 
 async function loadData() {
     if (!currentUser) return;
-    const { data: dbData } = await _supabase.from('transaksi').select('*').order('tanggal', { ascending: true });
+    const snap = await db.collection('users').doc(currentUser.uid).collection('transaksi').orderBy('tanggal', 'asc').get();
     assets.forEach(a => data[a.id] = []);
-    dbData?.forEach(item => { if (data[item.asset_id]) data[item.asset_id].push(item); });
+    snap.forEach(docu => {
+        const item = docu.data();
+        item.id = docu.id;
+        if (data[item.asset_id]) data[item.asset_id].push(item);
+    });
     render();
 }
 
@@ -430,15 +449,15 @@ async function tambah() {
         }
     }
 
-    await _supabase.from('transaksi').insert([{ 
-        user_id: currentUser.id, 
-        asset_id: currentTab, 
-        tipe, 
-        tanggal: tgl, 
-        harga, 
-        nominal, 
-        qty: tipe === "BUY" ? qtyIn : -qtyIn 
-    }]);
+    await db.collection('users').doc(currentUser.uid).collection('transaksi').add({
+        asset_id: currentTab,
+        tipe,
+        tanggal: tgl,
+        harga,
+        nominal,
+        qty: tipe === "BUY" ? qtyIn : -qtyIn,
+        created_at: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
     loadData(); 
     document.getElementById("harga").value = ""; 
@@ -449,7 +468,7 @@ function openModal(id) {
     const modal = document.getElementById('confirmModal');
     modal.classList.add('active');
     document.getElementById('confirmDeleteBtn').onclick = async () => {
-        await _supabase.from('transaksi').delete().eq('id', id);
+        await db.collection('users').doc(currentUser.uid).collection('transaksi').doc(id).delete();
         closeModal(); loadData();
     };
 }
@@ -568,7 +587,7 @@ function render() {
         const pos = calcPosition(currentData);
         
         currentData.forEach(d => {
-            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal(${d.id})" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
+            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal('${d.id}')" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
         });
         
         tbody.innerHTML = rows;
@@ -779,10 +798,9 @@ async function fetchPrices() {
 }
 function togglePrivacy() { privacy = !privacy; render(); }
 
-(async () => { 
-  await fetchPrices(); 
-  await checkUser(); 
-  setInterval(fetchPrices, 60000); 
+(async () => {
+  await fetchPrices();
+  setInterval(fetchPrices, 60000);
 })();
 </script>
 </body>
