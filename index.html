@@ -3,309 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nabung Crypto Pro - Cloud Sync</title>
+    <title>Nabung Crypto Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
-
     <style>
-        :root {
-            --primary: #2563eb; --success: #10b981; --danger: #ef4444;
-            --bg: #f8fafc; --card: #ffffff; --text-main: #1e293b;
-            --text-muted: #64748b; --border: #e2e8f0;
+        :root{
+            --ink:#1c2140; --muted:#6b7192; --faint:#9aa0bd; --line:#e7eaf6;
+            --card:#ffffff; --soft:#f6f7fe; --bg:#eef1fb;
+            --acc1:#5566ff; --acc2:#9a4bff;
+            --loss:#ef4444; --lossbg:#fdecec; --gain:#10b981; --gainbg:#e7f8f1;
         }
+        *{box-sizing:border-box}
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+        .container{max-width:1040px;margin:0 auto;padding:16px 18px 40px;position:relative;z-index:1}
+        .hidden{display:none !important}
+        button{font-family:inherit;cursor:pointer}
 
-        * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 15px; }
-        .container { max-width: 1000px; margin: 0 auto; position: relative; }
+        /* ambient mesh background */
+        .bgmesh{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+        .bgmesh span{position:absolute;border-radius:50%;filter:blur(80px);opacity:.4}
+        .bgmesh .g1{width:420px;height:420px;background:#8ea2ff;top:-140px;right:-80px}
+        .bgmesh .g2{width:360px;height:360px;background:#c9a2ff;bottom:-120px;left:-100px}
 
-        /* Auth UI */
-        .auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #e2e8f0, #f8fafc); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .login-card { background: white; padding: 50px 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15); text-align: center; max-width: 440px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.7); }
+        /* ---------- LOGIN ---------- */
+        .auth-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:2000;
+            background:var(--bg);overflow:hidden;padding:24px}
+        .auth-overlay .mesh{position:absolute;border-radius:50%;filter:blur(60px);opacity:.6}
+        .auth-overlay .m1{width:360px;height:360px;background:#8ea2ff;top:-90px;right:-40px;animation:float 16s ease-in-out infinite}
+        .auth-overlay .m2{width:320px;height:320px;background:#c9a2ff;bottom:-110px;left:-60px;animation:float 19s ease-in-out infinite reverse}
+        .auth-overlay .m3{width:200px;height:200px;background:#7fe0d0;top:42%;left:12%;animation:float 22s ease-in-out infinite}
+        .login-card{position:relative;width:100%;max-width:390px;border-radius:30px;overflow:hidden;
+            background:rgba(255,255,255,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+            box-shadow:0 40px 80px -30px rgba(50,60,150,.5);border:1px solid rgba(255,255,255,.8)}
+        .login-card .top{padding:44px 36px 30px;text-align:center}
+        .login-card .rocket{font-size:50px;line-height:1;margin-bottom:14px}
+        .login-card h3{font-size:23px;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 8px}
+        .login-card .subtitle{font-size:14px;color:var(--muted);line-height:1.5;margin:0 0 26px}
+        .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:15px;border-radius:15px;
+            font-weight:700;font-size:15px;border:none;color:#fff;
+            background:linear-gradient(135deg,var(--acc1),var(--acc2));box-shadow:0 14px 30px -10px rgba(90,70,255,.6);transition:transform .2s}
+        .btn-google:hover{transform:translateY(-2px)}
+        .btn-google .gwrap{background:#fff;border-radius:12px;padding:2px;display:flex}
+        .btn-google svg{width:20px;height:20px;display:block}
+        .login-footer{border-top:1px solid var(--line);background:var(--soft);padding:20px 30px 24px;text-align:center}
+        .login-footer .flabel{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:0 0 15px}
+        .fcoins{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .fcoins img{width:40px;height:40px;border-radius:50%;box-shadow:0 6px 14px -4px rgba(30,40,90,.35);transition:transform .2s}
+        .fcoins img:hover{transform:translateY(-4px) scale(1.08)}
 
-        .btn-google { background: #ffffff; border: 1px solid #dadce0; color: #3c4043; width: 100%; padding: 12px; border-radius: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-size: 16px; }
-        .btn-google:hover { background: #f7f8f9; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .btn-google svg { width: 20px; height: 20px; }
+        /* ---------- HEADER ---------- */
+        .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 2px 20px}
+        .brand{display:flex;align-items:center;gap:10px}
+        .brand .rk{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--acc1),var(--acc2));
+            display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 8px 18px -6px rgba(90,70,255,.6)}
+        .brand b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+        .who{display:flex;align-items:center;gap:12px}
+        .who .em{font-size:12.5px;color:var(--muted);font-weight:600}
+        .who .out{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:#fff;
+            display:flex;align-items:center;justify-content:center;color:var(--muted)}
+        .who .out:hover{color:var(--loss);border-color:var(--loss)}
+        .who .out svg{width:18px;height:18px}
 
-        /* Header Bar */
-        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 10px 0; }
-        .user-info { display: flex; flex-direction: column; }
-        .user-email { font-size: 13px; font-weight: 600; color: var(--text-muted); }
-        .btn-logout { background: white; border: 1.5px solid var(--danger); color: var(--danger); padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-        .btn-logout:hover { background: var(--danger); color: white; }
+        /* ---------- TABS / NAV ---------- */
+        .tabs{display:flex;gap:6px;padding:6px;background:#e2e6f6;border-radius:16px;overflow-x:auto;scrollbar-width:none;margin-bottom:20px}
+        .tabs::-webkit-scrollbar{display:none}
+        .tab{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;border:none;
+            background:transparent;font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+        .tab.on{background:#fff;color:var(--ink);box-shadow:0 8px 16px -8px rgba(40,50,120,.3)}
+        .tab-logo{width:20px;height:20px;border-radius:50%}
+        .tab-ic{font-size:16px;line-height:1}
 
-        /* Custom Modal */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; transition: 0.3s; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-card { background: white; padding: 32px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; transform: translateY(20px); transition: 0.3s; }
-        .modal-overlay.active .modal-card { transform: translateY(0); }
-        .modal-card h4 { margin: 0 0 12px; font-size: 20px; font-weight: 800; }
-        .modal-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
-        .btn-modal { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; }
+        /* ---------- SUMMARY ---------- */
+        .hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#232a63,#3a2a72);border-radius:22px;
+            padding:24px 26px;color:#fff;box-shadow:0 22px 44px -18px rgba(60,40,130,.6);margin-bottom:16px}
+        .hero .hb{position:absolute;width:170px;height:170px;border-radius:50%;filter:blur(42px);opacity:.6;background:#6d5efc;top:-70px;right:-20px}
+        .hero .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:600;margin:0}
+        .hero .val{font-size:38px;font-weight:800;letter-spacing:-.02em;margin:6px 0 0;position:relative;font-variant-numeric:tabular-nums}
+        .hero .row{display:flex;gap:10px;margin-top:16px;position:relative;flex-wrap:wrap}
+        .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:11px;font-size:13.5px;font-weight:700;background:rgba(255,255,255,.12)}
+        .chip.down{color:#ffb4b4;background:rgba(239,68,68,.2)}
+        .chip.up{color:#a7f3d0;background:rgba(16,185,129,.2)}
 
-        h2 { font-weight: 800; text-align: center; margin-bottom: 25px; font-size: 1.75rem; }
+        .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px}
+        .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+        .tile .t{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;display:flex;align-items:center;gap:6px}
+        .tile .v{font-size:19px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
+        .v.loss{color:var(--loss)} .v.gain{color:var(--gain)} .v.live{color:var(--acc1)}
+        .live-dot{width:8px;height:8px;border-radius:50%;background:var(--gain);display:inline-block;animation:pulse 2s infinite}
+        .live-dot.offline{background:var(--loss);animation:none}
 
-        /* Tabs */
-/* Tabs Container Utama (Desktop & Mobile) */
-        .tabs-container { 
-            overflow-x: auto; 
-            display: flex; 
-            background: #e2e8f0; 
-            padding: 6px; 
-            border-radius: 16px; 
-            margin-bottom: 20px; 
-            scrollbar-width: none; 
-            gap: 10px;
-            align-items: center;
+        .sec{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:22px 2px 12px}
+        .assets{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+        .asset{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+        .asset:hover{transform:translateY(-4px);box-shadow:0 16px 30px -14px rgba(40,50,120,.3)}
+        .asset .ah{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;position:relative;z-index:1}
+        .asset .nm{display:flex;align-items:center;gap:10px}
+        .asset .clogo{width:34px;height:34px;border-radius:50%}
+        .asset .nm b{font-size:17px;font-weight:800}
+        .badge{font-size:12px;font-weight:800;padding:5px 10px;border-radius:9px}
+        .badge.down{color:var(--loss);background:var(--lossbg)} .badge.up{color:var(--gain);background:var(--gainbg)}
+        .ab{display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:1}
+        .ab .t{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
+        .ab .v{font-size:14.5px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+        .asset-bg{position:absolute;right:-18px;bottom:-18px;width:104px;opacity:.06;filter:grayscale(1);pointer-events:none}
+        .empty{text-align:center;padding:56px 20px;color:var(--muted);font-size:14px}
+
+        /* ---------- COIN DETAIL ---------- */
+        .panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px}
+        .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px}
+        .fld label{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px}
+        .fld input,.fld select{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--soft);
+            padding:0 13px;font-size:14px;font-weight:600;color:var(--ink);outline:none}
+        .fld input:focus,.fld select:focus{border-color:var(--acc1);box-shadow:0 0 0 3px rgba(85,102,255,.14)}
+        .btns{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
+        .bp{flex:2 1 200px;background:linear-gradient(135deg,var(--acc1),var(--acc2));color:#fff;border:none;border-radius:13px;
+            padding:14px;font-weight:800;font-size:14.5px;box-shadow:0 12px 24px -10px rgba(90,70,255,.6)}
+        .bs{flex:1 1 auto;background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px;font-weight:700;font-size:13px;
+            color:var(--ink);display:flex;align-items:center;justify-content:center;gap:7px}
+        .bs:hover{border-color:var(--acc1);color:var(--acc1)}
+        .bs.ico{flex:0 0 52px}
+
+        .statrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+        .chartcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:16px;height:300px}
+        .tablecard{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+        .table-wrap{overflow-x:auto}
+        table{width:100%;border-collapse:collapse;font-size:13.5px}
+        th{text-align:left;padding:14px 16px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
+        td{padding:14px 16px;border-top:1px solid var(--line);font-weight:600;font-variant-numeric:tabular-nums}
+        td.buy{color:var(--gain);font-weight:800} td.sell{color:var(--loss);font-weight:800}
+        td.del{color:var(--loss);font-weight:800;text-align:center;cursor:pointer}
+
+        /* ---------- MODALS ---------- */
+        .modal-overlay{position:fixed;inset:0;background:rgba(28,33,64,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:3000;opacity:0;pointer-events:none;transition:.25s;padding:20px}
+        .modal-overlay.active{opacity:1;pointer-events:auto}
+        .modal-card{background:#fff;padding:30px;border-radius:24px;max-width:430px;width:100%;text-align:center;transform:translateY(16px);transition:.25s}
+        .modal-overlay.active .modal-card{transform:translateY(0)}
+        .modal-card h4{margin:0 0 12px;font-size:20px;font-weight:800}
+        .modal-card p{color:var(--muted);font-size:14px;margin-bottom:22px}
+        .btn-modal{flex:1;padding:13px;border-radius:12px;font-weight:700;border:none}
+        .calc-box{background:var(--soft);border-radius:16px;padding:20px;margin-top:16px;text-align:left}
+        .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+        .calc-grid input{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 13px;font-size:14px;font-weight:600;outline:none}
+        .calc-res{background:linear-gradient(135deg,var(--acc1),var(--acc2));color:#fff;padding:15px;border-radius:12px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+
+        @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(24px,-20px)}}
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.7)}70%{box-shadow:0 0 0 8px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+
+        /* ---------- MOBILE ---------- */
+        @media(max-width:768px){
+            .container{padding-bottom:92px}
+            .topbar{padding:12px 2px 16px}
+            .brand b{font-size:15px}
+            .who .em{display:none}
+            .hero .val{font-size:32px}
+            .tiles{grid-template-columns:1fr 1fr}
+            .tiles .tile:nth-child(3){grid-column:span 2}
+            .tabs{position:fixed;bottom:10px;left:14px;right:14px;margin:0;z-index:1500;
+                background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);
+                border-radius:22px;padding:10px 8px;box-shadow:0 12px 30px rgba(40,50,120,.2);justify-content:space-around}
+            .tab{flex:1;flex-direction:column;gap:5px;padding:6px 2px;font-size:9px}
+            .tab-logo{width:24px;height:24px;filter:grayscale(1);opacity:.5;transition:.2s}
+            .tab-ic{filter:grayscale(0)}
+            .tab.on{background:transparent;box-shadow:none;color:var(--ink)}
+            .tab.on .tab-logo{filter:grayscale(0);opacity:1;transform:scale(1.1)}
         }
-
-        /* Gaya Ikon/Logo agar tidak raksasa di komputer */
-        .nav-icon {
-            width: 20px;
-            height: 20px;
-            object-fit: contain;
-            transition: 0.3s;
-        }
-
-        .tabs-container button { 
-            flex: 0 0 auto; 
-            padding: 10px 22px; 
-            font-weight: 700; 
-            border: none; 
-            border-radius: 12px; 
-            background: transparent; 
-            cursor: pointer; 
-            color: var(--text-muted); 
-            display: flex;
-            align-items: center;
-            gap: 8px; /* Jarak antara logo dan teks di desktop */
-        }
-
-        .tabs-container button.active { 
-            background: var(--card); 
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
-            color: var(--text-main);
-        }
-
-        .card { background: var(--card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; overflow: hidden; }
-        .coin-bg-icon { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 160px; opacity: 0.08; filter: grayscale(100%); pointer-events: none; }
-
-        /* Card Design for Summary Assets */
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 10px; }
-        .asset-card { background: white; border-radius: 20px; padding: 20px; border: 1px solid var(--border); position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
-        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); }
-        .asset-header { display: flex; justify-content: space-between; align-items: center; z-index: 1; }
-        .asset-name-box { display: flex; align-items: center; gap: 10px; }
-        .asset-logo-sm { width: 32px; height: 32px; border-radius: 50%; }
-        .asset-symbol { font-weight: 800; font-size: 18px; }
-        .asset-pl-badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
-        .pl-profit { background: #dcfce7; color: var(--success); }
-        .pl-loss { background: #fee2e2; color: var(--danger); }
-        
-        .asset-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; z-index: 1; }
-        .asset-label { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
-        .asset-val { font-size: 14px; font-weight: 700; }
-        .asset-bg-logo { position: absolute; right: -15px; bottom: -15px; width: 100px; opacity: 0.05; filter: grayscale(1); pointer-events: none; }
-
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; position: relative; z-index: 1; }
-        label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; }
-        input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: rgba(255,255,255,0.9); font-size: 14px; }
-
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; position: relative; z-index: 1; }
-        .btn-primary { background: var(--primary); color: white; flex: 2 1 200px; padding: 14px; cursor: pointer; font-weight: 700; border-radius: 12px; border: none; font-size: 15px; }
-        .btn-action { background: #f1f5f9; color: var(--text-main); flex: 1; padding: 14px; cursor: pointer; font-weight: 600; border-radius: 12px; border: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
-        .stat-item { padding: 10px; border-left: 4px solid #f1f5f9; }
-        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; }
-        .stat-value { font-size: 18px; font-weight: 800; margin-top: 6px; }
-
-        .live-indicator { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
-        .live-indicator.offline { background-color: var(--danger); animation: none !important; box-shadow: none !important; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { text-align: left; padding: 16px; border-bottom: 1px solid var(--border); }
-        .profit { color: var(--success); } .loss { color: var(--danger); }
-        .hidden { display: none !important; }
-        #shareCanvas { display: none; }
-        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-
-        .calc-box { background: #f1f5f9; border-radius: 16px; padding: 20px; margin-top: 20px; text-align: left; }
-        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .calc-res { background: var(--primary); color: white; padding: 15px; border-radius: 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
-
-        /* Mobile Bottom Navigation Style */
-@media (max-width: 768px) {
-    body { padding-bottom: 80px; } /* Ruang agar konten tidak tertutup */
-
-    .tabs-container {
-                position: fixed;
-                bottom: 5px;
-                left: 15px;
-                right: 15px;
-                background: rgba(255, 255, 255, 0.9);
-                backdrop-filter: blur(12px);
-                border-radius: 25px;
-                padding: 10px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                z-index: 4000;
-                justify-content: space-around;
-                border: 1px solid rgba(255, 255, 255, 0.4);
-            }
-
-    .tabs-container button {
-        flex: 1;
-        padding: 8px 0;
-        font-size: 10px;
-        font-weight: 700;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-        border: none !important;
-        background: transparent;
-        color: var(--text-muted);
-        transition: 0.3s;
-    }
-
-    /* Gaya Logo Koin di Navigasi */
-    .nav-icon {
-        width: 24px;
-        height: 24px;
-        filter: grayscale(1); /* Default abu-abu saat tidak aktif */
-        opacity: 0.6;
-        transition: 0.3s;
-    }
-
-    .tabs-container button.active .nav-icon {
-        filter: grayscale(0); /* Berwarna saat aktif */
-        opacity: 1;
-        transform: scale(1.1);
-    }
-
-    .tabs-container button.active {
-        color: var(--text-main);
-        background: rgba(0,0,0,0.03);
-        border-radius: 15px;
-    }
-}
+        @media(prefers-reduced-motion:reduce){.auth-overlay .mesh{animation:none}}
     </style>
 </head>
 <body>
 
+<div class="bgmesh"><span class="g1"></span><span class="g2"></span></div>
+
+<!-- Confirm delete -->
 <div id="confirmModal" class="modal-overlay">
     <div class="modal-card">
-        <h4>Konfirmasi Hapus</h4>
-        <p>Hapus data transaksi ini secara permanen?</p>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-modal" style="background:#f1f5f9" onclick="closeModal()">Batal</button>
-            <button class="btn-modal" style="background:var(--danger); color:white" id="confirmDeleteBtn">Hapus</button>
+        <h4>Hapus transaksi?</h4>
+        <p>Data transaksi ini akan dihapus permanen.</p>
+        <div style="display:flex;gap:10px">
+            <button class="btn-modal" style="background:var(--soft)" onclick="closeModal()">Batal</button>
+            <button class="btn-modal" style="background:var(--loss);color:#fff" id="confirmDeleteBtn">Hapus</button>
         </div>
     </div>
 </div>
 
+<!-- DCA Calculator -->
 <div id="calcModal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 450px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <div class="modal-card" style="max-width:450px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <h4 style="margin:0">🧮 DCA Calculator</h4>
-            <button onclick="closeCalc()" style="background:none; border:none; cursor:pointer; font-size:20px;">✕</button>
+            <button onclick="closeCalc()" style="background:none;border:none;font-size:20px;color:var(--muted)">✕</button>
         </div>
-        <p style="text-align: left; margin-bottom: 15px;">Simulasikan harga rata-rata jika Anda menambah muatan.</p>
-        
+        <p style="text-align:left;margin:8px 0 0">Simulasikan harga rata-rata jika menambah muatan.</p>
         <div class="calc-box">
             <div class="calc-grid">
-                <div>
-                    <label>Nominal Beli ($)</label>
-                    <input type="number" id="calcNominal" oninput="calculateDCA()" placeholder="Contoh: 100">
-                </div>
-                <div>
-                    <label>Harga Beli ($)</label>
-                    <input type="number" id="calcPrice" oninput="calculateDCA()" placeholder="Harga target">
-                </div>
+                <div><label style="font-size:11px;font-weight:700;color:var(--muted)">Nominal Beli ($)</label><input type="number" id="calcNominal" oninput="calculateDCA()" placeholder="100"></div>
+                <div><label style="font-size:11px;font-weight:700;color:var(--muted)">Harga Beli ($)</label><input type="number" id="calcPrice" oninput="calculateDCA()" placeholder="Harga target"></div>
             </div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;" id="calcCurrentInfo">
-                Saldo Saat Ini: 0.00 | Avg: $0.00
-            </div>
-            <div class="calc-res">
-                <span>New Avg Price</span>
-                <span id="resAvg">$0.00</span>
-            </div>
-            <div style="margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--primary);" id="resDiff">
-                Penurunan Avg: 0%
-            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px" id="calcCurrentInfo">Saldo Saat Ini: 0.00 | Avg: $0.00</div>
+            <div class="calc-res"><span>New Avg Price</span><span id="resAvg">$0.00</span></div>
+            <div style="margin-top:10px;font-size:13px;font-weight:700;color:var(--acc1)" id="resDiff">Penurunan Avg: 0%</div>
         </div>
-        <button class="btn-modal" style="background:var(--text-main); color:white; width:100%; margin-top:20px;" onclick="closeCalc()">Selesai</button>
+        <button class="btn-modal" style="background:var(--ink);color:#fff;width:100%;margin-top:18px" onclick="closeCalc()">Selesai</button>
     </div>
 </div>
 
+<!-- LOGIN -->
 <div id="authScreen" class="auth-overlay hidden">
+    <span class="mesh m1"></span><span class="mesh m2"></span><span class="mesh m3"></span>
     <div class="login-card">
-        <div style="font-size: 56px; margin-bottom: 24px;">🚀</div>
-        <h3>Nabung Crypto Pro</h3>
-        <p>Akses dashboard investasi cloud Anda.</p>
-        <button class="btn-google" onclick="login()">
-            <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-            Masuk dengan Google
-        </button>
+        <div class="top">
+            <div class="rocket">🚀</div>
+            <h3>Nabung Crypto Pro</h3>
+            <p class="subtitle">Akses dashboard investasi cloud Anda.</p>
+            <button class="btn-google" onclick="login()">
+                <span class="gwrap"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
+                Masuk dengan Google
+            </button>
+        </div>
+        <div class="login-footer">
+            <p class="flabel">Lacak semua aset Anda</p>
+            <div class="fcoins">
+                <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png" alt="BTC">
+                <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png" alt="ETH">
+                <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png" alt="SOL">
+                <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png" alt="BNB">
+                <img src="https://cryptologos.cc/logos/sui-sui-logo.png" alt="SUI">
+                <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/paxg.png" alt="PAXG">
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- APP -->
 <div id="appScreen" class="container hidden">
-    <div class="header-bar">
-        <div class="user-info">
-            <span style="font-size: 10px; text-transform: uppercase; color: var(--text-muted);">Logged in as</span>
-            <span id="userEmail" class="user-email">...</span>
-        </div>
-        <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
-
-    <h2>Nabung Crypto Pro</h2>
-    <div class="tabs-container" id="menuTabs"></div>
-
-    <div class="card" id="inputCard">
-        <img id="coinIcon" src="" class="coin-bg-icon">
-        <div class="grid-inputs">
-            <div><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL/TP</option></select></div>
-            <div><label>Tanggal</label><input type="date" id="tanggal"></div>
-            <div><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00"></div>
-            <div><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
-        </div>
-        <div class="btn-group">
-            <button class="btn-primary" onclick="tambah()">Simpan ke Cloud</button>
-            <button class="btn-action" onclick="openCalc()">🧮 Calc</button>
-            <button class="btn-action" onclick="generateShareImage()">📸 Share P/L (%)</button>
-            <button class="btn-action" onclick="exportCSV()">📊 Excel</button>
-            <button class="btn-action" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
+    <div class="topbar">
+        <div class="brand"><span class="rk">🚀</span><b>Nabung Crypto Pro</b></div>
+        <div class="who">
+            <span id="userEmail" class="em">...</span>
+            <button class="out" onclick="logout()" title="Logout" aria-label="Logout">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+            </button>
         </div>
     </div>
 
-    <div class="card stats-grid">
-        <div class="stat-item"><div class="stat-label" id="labelTotal">Net Investasi</div><div class="stat-value" id="totalModal">0</div></div>
-        <div class="stat-item" id="livePriceContainer">
-            <div class="stat-label">Live Price <span id="liveStatus" class="live-indicator"></span></div>
-            <div class="stat-value" id="livePrice" style="color:var(--primary)">0</div>
+    <div class="tabs" id="menuTabs"></div>
+
+    <!-- SUMMARY VIEW -->
+    <div id="summaryView">
+        <div class="hero">
+            <span class="hb"></span>
+            <p class="lbl">Total nilai portfolio</p>
+            <p class="val" id="sumValue">$0</p>
+            <div class="row">
+                <span class="chip" id="sumFloat">$0</span>
+                <span class="chip" id="sumFloatPct">0%</span>
+            </div>
         </div>
-        <div class="stat-item"><div class="stat-label">Floating P/L ($)</div><div class="stat-value" id="upl">0</div></div>
-        <div class="stat-item" style="border-left:4px solid var(--primary)"><div class="stat-label">P/L (%)</div><div class="stat-value" id="uplPct">0%</div></div>
+        <div class="tiles">
+            <div class="tile"><div class="t">Total modal</div><div class="v" id="sumModal">$0</div></div>
+            <div class="tile"><div class="t">Nilai sekarang</div><div class="v" id="sumNow">$0</div></div>
+            <div class="tile"><div class="t">Total P/L</div><div class="v" id="sumTotalPL">$0</div></div>
+        </div>
+        <div class="sec">Aset saya</div>
+        <div id="summaryArea" class="assets"></div>
+        <div id="emptySummary" class="empty hidden">📊<br>Belum ada transaksi. Pilih koin di atas untuk mulai mencatat.</div>
     </div>
 
-    <div class="card" id="chartCard" style="height: 300px;"><canvas id="performanceChart"></canvas></div>
-
-    <div id="summaryArea" class="summary-grid"></div>
-
-    <div class="card" id="tableCard">
-        <div class="table-wrapper" id="tableContainer">
-            <table><thead id="tableHead"></thead><tbody id="tabel"></tbody></table>
+    <!-- COIN DETAIL VIEW -->
+    <div id="coinView" class="hidden">
+        <div class="panel">
+            <div class="form">
+                <div class="fld"><label>Tipe</label><select id="tipe"><option value="BUY">BUY</option><option value="SELL">SELL / TP</option></select></div>
+                <div class="fld"><label>Tanggal</label><input type="date" id="tanggal"></div>
+                <div class="fld"><label>Harga ($)</label><input type="number" id="harga" placeholder="0.00"></div>
+                <div class="fld"><label>Nominal ($)</label><input type="number" id="nominal" placeholder="0.00"></div>
+            </div>
+            <div class="btns">
+                <button class="bp" onclick="tambah()">Simpan ke Cloud</button>
+                <button class="bs" onclick="openCalc()">🧮 Calc</button>
+                <button class="bs" onclick="generateShareImage()">📸 Share P/L</button>
+                <button class="bs" onclick="exportCSV()">📊 Excel</button>
+                <button class="bs ico" onclick="togglePrivacy()" id="privacyBtn">🔒</button>
+            </div>
         </div>
-        <div id="emptyState" class="empty-state hidden">📊<br><span id="emptyText">Belum ada transaksi.</span></div>
+        <div class="statrow">
+            <div class="tile"><div class="t">Net Investasi</div><div class="v" id="coinModal">$0</div></div>
+            <div class="tile"><div class="t">Live Price <span id="liveStatus" class="live-dot"></span></div><div class="v live" id="livePrice">0</div></div>
+            <div class="tile"><div class="t">Floating P/L</div><div class="v" id="coinFloat">$0</div></div>
+            <div class="tile"><div class="t">P/L (%)</div><div class="v" id="coinFloatPct">0%</div></div>
+        </div>
+        <div class="chartcard"><canvas id="performanceChart"></canvas></div>
+        <div class="tablecard">
+            <div class="table-wrap" id="tableContainer">
+                <table><thead><tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr></thead><tbody id="tabel"></tbody></table>
+            </div>
+            <div id="emptyState" class="empty hidden">📭<br>Belum ada transaksi untuk koin ini.</div>
+        </div>
     </div>
 </div>
 
-<canvas id="shareCanvas" width="800" height="450"></canvas>
+<canvas id="shareCanvas" width="800" height="450" style="display:none"></canvas>
 
 <script>
 const firebaseConfig = {
@@ -323,7 +323,7 @@ const db = firebase.firestore();
 
 const assets = [
     { id: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin', color: '#F7931A', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png' },
-    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#3c3c3d', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png' },
+    { id: 'ETH', name: 'Ethereum', geckoId: 'ethereum', color: '#627EEA', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png' },
     { id: 'SOL', name: 'Solana', geckoId: 'solana', color: '#A464FA', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png' },
     { id: 'BNB', name: 'Binance', geckoId: 'binancecoin', color: '#F3BA2F', logo: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/bnb.png' },
     { id: 'SUI', name: 'Sui', geckoId: 'sui', color: '#6FBCF0', logo: 'https://cryptologos.cc/logos/sui-sui-logo.png' },
@@ -332,77 +332,30 @@ const assets = [
 
 let currentUser = null, currentTab = "SUMMARY", privacy = false, livePrices = {}, data = {}, chartInstance = null, isApiOnline = false;
 
-// Fungsi Inti: Menghitung posisi berdasarkan Average Price
 function calcPosition(list) {
     let qty = 0, modalRemaining = 0, realizedPL = 0, totalBuyNominal = 0;
-    
     list.forEach(d => {
         if (d.tipe === 'BUY') {
-            qty += d.qty;
-            modalRemaining += d.nominal;
-            totalBuyNominal += d.nominal;
+            qty += d.qty; modalRemaining += d.nominal; totalBuyNominal += d.nominal;
         } else {
             if (qty > 0) {
                 const avgBuyPrice = modalRemaining / qty;
                 const qtySell = Math.abs(d.qty);
                 const costOfSoldQty = avgBuyPrice * qtySell;
-                
-                // Realized P/L = Hasil Jual - Modal proporsional koin yang dijual
                 realizedPL += (Math.abs(d.nominal) - costOfSoldQty);
-                
-                modalRemaining -= costOfSoldQty;
-                qty -= qtySell;
+                modalRemaining -= costOfSoldQty; qty -= qtySell;
             }
         }
     });
-
-    return {
-        qty: Math.max(0, qty),
-        modal: Math.max(0, modalRemaining),
-        avg: qty > 0.00000001 ? modalRemaining / qty : 0,
-        realizedPL: realizedPL,
-        totalInvested: totalBuyNominal
-    };
+    return { qty: Math.max(0, qty), modal: Math.max(0, modalRemaining), avg: qty > 1e-8 ? modalRemaining / qty : 0, realizedPL, totalInvested: totalBuyNominal };
 }
 
-function openCalc() {
-    const pos = calcPosition(data[currentTab] || []);
-    document.getElementById('calcCurrentInfo').innerText = `Saldo Saat Ini: ${pos.qty.toFixed(6)} | Avg: $${fmt(pos.avg)}`;
-    document.getElementById('calcNominal').value = "";
-    document.getElementById('calcPrice').value = livePrices[currentTab] || "";
-    document.getElementById('resAvg').innerText = "$0.00";
-    document.getElementById('resDiff').innerText = "Penurunan Avg: 0%";
-    document.getElementById('calcModal').classList.add('active');
-}
-
-function closeCalc() { document.getElementById('calcModal').classList.remove('active'); }
-
-function calculateDCA() {
-    const pos = calcPosition(data[currentTab] || []);
-    const newNominal = Number(document.getElementById('calcNominal').value) || 0;
-    const newPrice = Number(document.getElementById('calcPrice').value) || 0;
-    if (newPrice > 0) {
-        const newQtyTotal = pos.qty + (newNominal / newPrice);
-        const newModalTotal = pos.modal + newNominal;
-        const newAvg = newModalTotal / newQtyTotal;
-        document.getElementById('resAvg').innerText = "$" + fmt(newAvg);
-        if (pos.avg > 0) {
-            const diff = ((newAvg - pos.avg) / pos.avg * 100);
-            document.getElementById('resDiff').innerText = `${diff < 0 ? 'Penurunan' : 'Kenaikan'} Avg: ${Math.abs(diff).toFixed(2)}%`;
-            document.getElementById('resDiff').style.color = diff < 0 ? 'var(--success)' : 'var(--danger)';
-        }
-    }
-}
-
+/* ---------- AUTH ---------- */
 function login() {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch(err => alert("Login gagal: " + err.message));
 }
-
-function logout() {
-    auth.signOut();
-}
-
+function logout() { auth.signOut(); }
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
@@ -411,57 +364,35 @@ auth.onAuthStateChanged(user => {
         document.getElementById('appScreen').classList.remove('hidden');
         renderTabs(); switchTab("SUMMARY"); loadData();
     } else {
-        currentUser = null;
-        data = {};
+        currentUser = null; data = {};
         document.getElementById('appScreen').classList.add('hidden');
         document.getElementById('authScreen').classList.remove('hidden');
     }
 });
 
+/* ---------- DATA ---------- */
 async function loadData() {
     if (!currentUser) return;
     const snap = await db.collection('users').doc(currentUser.uid).collection('transaksi').orderBy('tanggal', 'asc').get();
     assets.forEach(a => data[a.id] = []);
-    snap.forEach(docu => {
-        const item = docu.data();
-        item.id = docu.id;
-        if (data[item.asset_id]) data[item.asset_id].push(item);
-    });
+    snap.forEach(docu => { const item = docu.data(); item.id = docu.id; if (data[item.asset_id]) data[item.asset_id].push(item); });
     render();
 }
 
 async function tambah() {
     const tipe = document.getElementById("tipe").value, tgl = document.getElementById("tanggal").value;
     const harga = Number(document.getElementById("harga").value), nominal = Number(document.getElementById("nominal").value);
-    
-    if(!tgl || !harga || !nominal) return alert("Lengkapi data!");
-
-    // MENGGUNAKAN FUNGSI POSISI YANG SUDAH ADA
+    if (!tgl || !harga || !nominal) return alert("Lengkapi data!");
     const pos = calcPosition(data[currentTab] || []);
     let qtyIn = nominal / harga;
-
-    // VALIDASI: Gunakan toleransi angka desimal yang lebih besar jika ingin SELL ALL
-    if (tipe === "SELL") {
-        // Jika selisih kuantitas sangat kecil (misal mau jual semua), 
-        // kita anggap saldo cukup untuk menghindari error pembulatan desimal
-        if (qtyIn > (pos.qty + 0.0001)) {
-            return alert(`Saldo tidak cukup! Sisa saldo qty Anda: ${pos.qty.toFixed(6)}`);
-        }
-    }
-
+    if (tipe === "SELL" && qtyIn > (pos.qty + 0.0001)) return alert(`Saldo tidak cukup! Sisa qty: ${pos.qty.toFixed(6)}`);
     await db.collection('users').doc(currentUser.uid).collection('transaksi').add({
-        asset_id: currentTab,
-        tipe,
-        tanggal: tgl,
-        harga,
-        nominal,
+        asset_id: currentTab, tipe, tanggal: tgl, harga, nominal,
         qty: tipe === "BUY" ? qtyIn : -qtyIn,
         created_at: firebase.firestore.FieldValue.serverTimestamp()
     });
-
-    loadData(); 
-    document.getElementById("harga").value = ""; 
-    document.getElementById("nominal").value = "";
+    loadData();
+    document.getElementById("harga").value = ""; document.getElementById("nominal").value = "";
 }
 
 function openModal(id) {
@@ -474,334 +405,212 @@ function openModal(id) {
 }
 function closeModal() { document.getElementById('confirmModal').classList.remove('active'); }
 
+/* ---------- NAV ---------- */
 function renderTabs() {
-    const container = document.getElementById('menuTabs');
-    
-    // Tombol SUMMARY
-    let html = `
-        <button class="${currentTab === 'SUMMARY' ? 'active' : ''}" data-coin="SUMMARY" onclick="switchTab('SUMMARY')">
-            <span class="nav-icon" style="filter:none; opacity:1; font-size:18px; display:flex; align-items:center; justify-content:center;">🏠</span>
-            <span>SUMMARY</span>
-        </button>`;
-    
-    // Mapping Logo Koin
-    html += assets.map(a => {
-        const isActive = currentTab === a.id;
-        return `
-            <button class="${isActive ? 'active' : ''}" data-coin="${a.id}" onclick="switchTab('${a.id}')">
-                <img src="${a.logo}" class="nav-icon" alt="${a.id}">
-                <span>${a.id}</span>
-            </button>`;
-    }).join('');
-    
-    container.innerHTML = html;
+    let html = `<button class="tab ${currentTab === 'SUMMARY' ? 'on' : ''}" onclick="switchTab('SUMMARY')"><span class="tab-ic">🏠</span><span>Summary</span></button>`;
+    html += assets.map(a => `<button class="tab ${currentTab === a.id ? 'on' : ''}" onclick="switchTab('${a.id}')"><img class="tab-logo" src="${a.logo}" alt="${a.id}"><span>${a.id}</span></button>`).join('');
+    document.getElementById('menuTabs').innerHTML = html;
 }
 
 function switchTab(id) {
     currentTab = id; renderTabs();
-    document.getElementById("inputCard").className = id === "SUMMARY" ? "card hidden" : "card";
-    document.getElementById("chartCard").className = id === "SUMMARY" ? "card hidden" : "card";
-    document.getElementById("tableCard").className = id === "SUMMARY" ? "card hidden" : "card";
-    document.getElementById("livePriceContainer").className = id === "SUMMARY" ? "stat-item hidden" : "stat-item";
-    document.getElementById("labelTotal").innerText = id === "SUMMARY" ? "Portfolio Value" : "Net Investasi";
-    if (id !== "SUMMARY") { document.getElementById("coinIcon").src = assets.find(a => a.id === id).logo; setTimeout(initChart, 100); }
+    const isSum = id === "SUMMARY";
+    document.getElementById("summaryView").classList.toggle("hidden", !isSum);
+    document.getElementById("coinView").classList.toggle("hidden", isSum);
+    if (!isSum) setTimeout(initChart, 80);
     render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Gantilah bagian fungsi render() Anda dengan ini agar lebih aman
+/* ---------- RENDER ---------- */
 function render() {
-    const tbody = document.getElementById("tabel"), tableHead = document.getElementById("tableHead");
-    const container = document.getElementById("tableContainer"), empty = document.getElementById("emptyState");
-    const summaryArea = document.getElementById("summaryArea");
-    const livePriceEl = document.getElementById("livePrice");
-    
     document.getElementById("privacyBtn").innerHTML = privacy ? "🔓" : "🔒";
-
-    if (currentTab === "SUMMARY") {
-        summaryArea.classList.remove('hidden');
-        let totalM = 0, totalV = 0, cardsHtml = "", hasD = false;
-
-        assets.forEach(a => {
-            const transData = data[a.id] || [];
-            // CEK: Hanya buat kartu jika koin ini punya riwayat transaksi
-            if (transData.length > 0) { 
-                hasD = true;
-                const pos = calcPosition(transData);
-                let lp = livePrices[a.id] || 0, v = pos.qty * lp;
-                let p, pPct, statusText, plClass;
-
-                if (pos.qty > 0.00000001) {
-                    p = v - pos.modal;
-                    pPct = (p / pos.modal * 100);
-                    statusText = p >= 0 ? '▲' : '▼';
-                    plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
-                    totalM += pos.modal; totalV += v;
-                } else {
-                    p = pos.realizedPL;
-                    pPct = pos.totalInvested > 0 ? (p / pos.totalInvested * 100) : 0;
-                    statusText = p >= 0 ? '💰 Final' : '🔴 Final';
-                    plClass = p >= 0 ? 'pl-profit' : 'pl-loss';
-                }
-
-                cardsHtml += `
-                <div class="asset-card" onclick="switchTab('${a.id}')" style="cursor:pointer">
-                    <div class="asset-header">
-                        <div class="asset-name-box">
-                            <img src="${a.logo}" class="asset-logo-sm">
-                            <span class="asset-symbol">${a.id}</span>
-                        </div>
-                        <div class="asset-pl-badge ${plClass}">
-                            ${statusText} ${pPct.toFixed(2)}%
-                        </div>
-                    </div>
-                    <div class="asset-body">
-                        <div><div class="asset-label">Avg Price</div><div class="asset-val">${pos.qty > 0 ? '$' + fmt(pos.avg) : '-'}</div></div>
-                        <div><div class="asset-label">Market Value</div><div class="asset-val">${privacy ? '••••' : '$' + fmt(v)}</div></div>
-                        <div><div class="asset-label">Quantity</div><div class="asset-val">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
-                        <div><div class="asset-label">Total P/L</div><div class="asset-val ${p >= 0 ? 'profit' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '') + '$' + fmt(p)}</div></div>
-                    </div>
-                    <img src="${a.logo}" class="asset-bg-logo">
-                </div>`;
-            }
-        });
-
-        summaryArea.innerHTML = cardsHtml;
-        let tUPL = totalV - totalM, tPct = totalM > 0 ? (tUPL/totalM*100) : 0;
-       // 1. Update Teks
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(totalV);
-        document.getElementById("upl").innerText = privacy ? "••••" : (tUPL>=0?"+":"") + "$" + fmt(tUPL);
-        document.getElementById("uplPct").innerText = tPct.toFixed(2) + "%";
-
-        // 2. TAMBAHKAN DUA BARIS INI (Update Warna):
-        document.getElementById("upl").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
-        document.getElementById("uplPct").className = "stat-value " + (tUPL >= 0 ? "profit" : "loss");
-        
-        container.classList.add("hidden");
-        empty.className = hasD ? "hidden" : "empty-state";
-    } else {
-        // Logika untuk Tab Koin Individu (BTC, ETH, dll)
-        summaryArea.classList.add('hidden');
-        tableHead.innerHTML = `<tr><th>Tipe</th><th>Tanggal</th><th>Harga</th><th>Nominal</th><th>Qty</th><th></th></tr>`;
-        let rows = "";
-        const currentData = data[currentTab] || [];
-        const pos = calcPosition(currentData);
-        
-        currentData.forEach(d => {
-            rows += `<tr><td style="color:${d.tipe==='BUY'?'var(--success)':'var(--danger)'};font-weight:700">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy?'••':'$'+fmt(d.nominal)}</td><td>${privacy?'••':d.qty.toFixed(6)}</td><td onclick="openModal('${d.id}')" style="color:red;cursor:pointer;font-weight:bold">X</td></tr>`;
-        });
-        
-        tbody.innerHTML = rows;
-        container.className = currentData.length ? "table-wrapper" : "hidden";
-        empty.className = currentData.length ? "hidden" : "empty-state";
-        
-        let lp = livePrices[currentTab] || 0, v = pos.qty * lp, p = v - pos.modal, pct = pos.modal > 0 ? (p/pos.modal*100) : 0;
-        document.getElementById("totalModal").innerText = privacy ? "••••" : "$" + fmt(pos.modal);
-        
-        if (lp > 0) {
-            livePriceEl.innerText = "$" + fmt(lp);
-            document.getElementById("upl").innerText = privacy ? "••••" : (p>=0?"+":"") + "$" + fmt(p);
-            document.getElementById("uplPct").innerText = pct.toFixed(2) + "%";
-            document.getElementById("upl").className = "stat-value " + (p>=0?"profit":"loss");
-            document.getElementById("uplPct").className = "stat-value " + (p>=0?"profit":"loss");
-        } else {
-            livePriceEl.innerText = "Fetching...";
-        }
-    }
+    if (currentTab === "SUMMARY") renderSummary(); else renderCoin();
 }
 
-function generateShareImage() {
-    if (currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
-
-    const asset = assets.find(a => a.id === currentTab);
-    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
-
-    // Ambil data posisi dari fungsi calcPosition yang sudah diperbarui
-    const pos = calcPosition(data[currentTab] || []);
-    const lp = livePrices[currentTab] || 0;
-    
-    let p, pct, label, footerTitle, footerValue;
-
-    // LOGIKA PEMISAH: CEK APAKAH SALDO MASIH ADA ATAU SUDAH HABIS
-    if (pos.qty > 0.00000001) {
-        // KONDISI MASIH HOLDING (Floating P/L)
-        p = (pos.qty * lp) - pos.modal;
-        pct = pos.modal > 0 ? (p / pos.modal * 100) : 0;
-        label = p >= 0 ? "PROFIT" : "LOSS";
-        footerTitle = "AVG BUY";
-        footerValue = "$" + fmt(pos.avg);
-    } else {
-        // KONDISI SUDAH TERJUAL HABIS (Realized P/L)
-        p = pos.realizedPL;
-        pct = pos.totalInvested > 0 ? (p / pos.totalInvested * 100) : 0;
-        label = p >= 0 ? "FINAL PROFIT" : "FINAL LOSS";
-        footerTitle = "TOTAL P/L";
-        footerValue = (p >= 0 ? "+" : "") + "$" + fmt(p);
-    }
-
-    const isP = p >= 0;
-
-    const draw = (img = null) => {
-        // Background
-        ctx.fillStyle = "#0f172a"; 
-        ctx.fillRect(0, 0, 800, 450);
-
-        // Header
-        ctx.fillStyle = "white"; 
-        ctx.font = "bold 32px Inter"; 
-        ctx.fillText(`${asset.name} ${pos.qty > 0 ? 'Performance' : 'Closed Position'}`, 50, 70);
-
-        ctx.fillStyle = "#64748b"; 
-        ctx.font = "500 18px Inter"; 
-        ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
-
-        // Persentase PNL (Besar)
-        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; 
-        ctx.font = "bold 120px Inter"; 
-        ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
-
-        // Sub-label (PROFIT / LOSS / FINAL PROFIT)
-        ctx.font = "bold 24px Inter"; 
-        ctx.fillText(label, 50, 310);
-
-        // Garis Pemisah
-        ctx.strokeStyle = "#334155"; 
-        ctx.lineWidth = 1; 
-        ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
-
-        // Footer Labels
-        ctx.fillStyle = "#94a3b8"; 
-        ctx.font = "700 14px Inter"; 
-        ctx.fillText(footerTitle, 50, 385); // Dinamis: AVG BUY atau TOTAL P/L
-        ctx.fillText("LAST PRICE", 300, 385); 
-        ctx.fillText("STATUS", 550, 385);
-
-        // Footer Values
-        ctx.fillStyle = "white"; 
-        ctx.font = "bold 28px Inter"; 
-        ctx.fillText(footerValue, 50, 420); 
-        ctx.fillText("$" + fmt(lp), 300, 420); 
-        ctx.fillText(pos.qty > 0 ? "HOLDING" : "SOLD OUT", 550, 420);
-
-        // Logo & Watermark
-        ctx.textAlign = "right";
-        if (img) { 
-            ctx.drawImage(img, 650, 40, 100, 100); 
-            ctx.fillStyle = asset.color; 
-            ctx.font = "bold 80px Inter"; 
-            ctx.fillText(currentTab, 640, 110); 
-        } else { 
-            ctx.fillStyle = asset.color; 
-            ctx.font = "bold 80px Inter"; 
-            ctx.fillText(`${currentTab}`, 750, 110); 
-        }
-
-        ctx.textAlign = "left"; 
-        ctx.fillStyle = "#334155"; 
-        ctx.fillRect(0, 445, 800, 5);
-
-        // Download
-        const link = document.createElement('a'); 
-        link.download = `PNL_${currentTab}.png`; 
-        link.href = canvas.toDataURL(); 
-        link.click();
-    };
-
-    const logoImg = new Image(); 
-    logoImg.crossOrigin = "anonymous"; 
-    logoImg.onload = () => draw(logoImg); 
-    logoImg.onerror = () => draw(); 
-    logoImg.src = asset.logo;
-}
-    
-function exportCSV() {
-    if (currentTab === "SUMMARY") return alert("Pilih koin spesifik untuk ekspor.");
-
-    const pos = calcPosition(data[currentTab] || []);
-    const lp = livePrices[currentTab] || 0;
-    const pnl = (pos.qty * lp) - pos.modal;
-
-    // Ganti sep=, menjadi sep=; agar sesuai regional Indonesia
-    let csv = "sep=;\n"; 
-
-    // BAGIAN 1: DETAIL RIWAYAT TRANSAKSI
-    csv += `RIWAYAT TRANSAKSI ASSET: ${currentTab}\n`;
-    // Gunakan titik koma sebagai pemisah kolom
-    csv += `Tipe;Tanggal;Harga Asset ($);Nominal Investasi ($);Quantity Didapat\n`;
-
-    (data[currentTab] || []).forEach(d => {
-        // Angka desimal tetap pakai titik agar tidak tertukar dengan pemisah kolom
-        csv += `${d.tipe};${d.tanggal};${d.harga.toFixed(2)};${d.nominal.toFixed(2)};${d.qty.toFixed(8)}\n`;
+function renderSummary() {
+    let totalM = 0, totalV = 0, cards = "", hasD = false;
+    assets.forEach(a => {
+        const t = data[a.id] || [];
+        if (t.length === 0) return;
+        hasD = true;
+        const pos = calcPosition(t);
+        let lp = livePrices[a.id] || 0, v = pos.qty * lp, p, pPct;
+        if (pos.qty > 1e-8) { p = v - pos.modal; pPct = pos.modal > 0 ? p / pos.modal * 100 : 0; totalM += pos.modal; totalV += v; }
+        else { p = pos.realizedPL; pPct = pos.totalInvested > 0 ? p / pos.totalInvested * 100 : 0; }
+        const cls = p >= 0 ? 'up' : 'down', arrow = p >= 0 ? '▲' : '▼';
+        cards += `<div class="asset" onclick="switchTab('${a.id}')">
+            <div class="ah"><div class="nm"><img class="clogo" src="${a.logo}" alt=""><b>${a.id}</b></div>
+            <span class="badge ${cls}">${arrow} ${Math.abs(pPct).toFixed(2)}%</span></div>
+            <div class="ab">
+                <div><div class="t">Avg Price</div><div class="v">${pos.qty > 0 ? '$' + fmt(pos.avg) : '—'}</div></div>
+                <div><div class="t">Market Value</div><div class="v">${privacy ? '••••' : '$' + fmt(v)}</div></div>
+                <div><div class="t">Quantity</div><div class="v">${privacy ? '••••' : pos.qty.toFixed(4)}</div></div>
+                <div><div class="t">Total P/L</div><div class="v ${p >= 0 ? 'gain' : 'loss'}">${privacy ? '••••' : (p >= 0 ? '+' : '−') + '$' + fmt(Math.abs(p))}</div></div>
+            </div>
+            <img class="asset-bg" src="${a.logo}" alt=""></div>`;
     });
-
-    csv += "\n\n";
-
-    // BAGIAN 2: RINGKASAN POSISI ASET
-    csv += `RINGKASAN POSISI AKHIR\n`;
-    csv += `Keterangan;Nilai\n`;
-    csv += `Total Holding Quantity;${pos.qty.toFixed(8)}\n`;
-    csv += `Average Buy Price;${pos.avg.toFixed(2)}\n`;
-    csv += `Total Net Investment (Modal);${pos.modal.toFixed(2)}\n`;
-    csv += `Current Market Value;${(pos.qty * lp).toFixed(2)}\n`;
-    csv += `Floating Profit/Loss ($);${pnl.toFixed(2)}\n`;
-    csv += `Profit/Loss (%);${(pos.modal > 0 ? (pnl/pos.modal*100) : 0).toFixed(2)}%\n`;
-
-    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `DCA_History_${currentTab}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    document.getElementById("summaryArea").innerHTML = cards;
+    document.getElementById("emptySummary").classList.toggle("hidden", hasD);
+    const tUPL = totalV - totalM, tPct = totalM > 0 ? tUPL / totalM * 100 : 0;
+    document.getElementById("sumValue").innerText = privacy ? "••••" : "$" + fmt(totalV);
+    document.getElementById("sumModal").innerText = privacy ? "••••" : "$" + fmt(totalM);
+    document.getElementById("sumNow").innerText = privacy ? "••••" : "$" + fmt(totalV);
+    const fEl = document.getElementById("sumFloat"), pEl = document.getElementById("sumFloatPct"), tEl = document.getElementById("sumTotalPL");
+    fEl.innerText = "▼▲".charAt(tUPL >= 0 ? 1 : 0) + " " + (privacy ? "••••" : "$" + fmt(Math.abs(tUPL)));
+    fEl.className = "chip " + (tUPL >= 0 ? "up" : "down");
+    pEl.innerText = tPct.toFixed(2) + "%";
+    pEl.className = "chip " + (tUPL >= 0 ? "up" : "down");
+    tEl.innerText = privacy ? "••••" : (tUPL >= 0 ? "+" : "−") + "$" + fmt(Math.abs(tUPL));
+    tEl.className = "v " + (tUPL >= 0 ? "gain" : "loss");
 }
 
+function renderCoin() {
+    const cur = data[currentTab] || [], pos = calcPosition(cur);
+    let rows = "";
+    cur.slice().reverse().forEach(d => {
+        rows += `<tr><td class="${d.tipe === 'BUY' ? 'buy' : 'sell'}">${d.tipe}</td><td>${d.tanggal}</td><td>$${fmt(d.harga)}</td><td>${privacy ? '••' : '$' + fmt(Math.abs(d.nominal))}</td><td>${privacy ? '••' : Math.abs(d.qty).toFixed(6)}</td><td class="del" onclick="openModal('${d.id}')">✕</td></tr>`;
+    });
+    document.getElementById("tabel").innerHTML = rows;
+    document.getElementById("tableContainer").classList.toggle("hidden", cur.length === 0);
+    document.getElementById("emptyState").classList.toggle("hidden", cur.length !== 0);
+
+    let lp = livePrices[currentTab] || 0, v = pos.qty * lp, p = v - pos.modal, pct = pos.modal > 0 ? p / pos.modal * 100 : 0;
+    document.getElementById("coinModal").innerText = privacy ? "••••" : "$" + fmt(pos.modal);
+    const fEl = document.getElementById("coinFloat"), pEl = document.getElementById("coinFloatPct");
+    if (lp > 0) {
+        document.getElementById("livePrice").innerText = "$" + fmt(lp);
+        fEl.innerText = privacy ? "••••" : (p >= 0 ? "+" : "−") + "$" + fmt(Math.abs(p));
+        fEl.className = "v " + (p >= 0 ? "gain" : "loss");
+        pEl.innerText = pct.toFixed(2) + "%";
+        pEl.className = "v " + (p >= 0 ? "gain" : "loss");
+    } else {
+        document.getElementById("livePrice").innerText = "Fetching...";
+    }
+}
+
+/* ---------- DCA CALCULATOR ---------- */
+function openCalc() {
+    const pos = calcPosition(data[currentTab] || []);
+    document.getElementById('calcCurrentInfo').innerText = `Saldo Saat Ini: ${pos.qty.toFixed(6)} | Avg: $${fmt(pos.avg)}`;
+    document.getElementById('calcNominal').value = "";
+    document.getElementById('calcPrice').value = livePrices[currentTab] || "";
+    document.getElementById('resAvg').innerText = "$0.00";
+    document.getElementById('resDiff').innerText = "Penurunan Avg: 0%";
+    document.getElementById('calcModal').classList.add('active');
+}
+function closeCalc() { document.getElementById('calcModal').classList.remove('active'); }
+function calculateDCA() {
+    const pos = calcPosition(data[currentTab] || []);
+    const newNominal = Number(document.getElementById('calcNominal').value) || 0;
+    const newPrice = Number(document.getElementById('calcPrice').value) || 0;
+    if (newPrice > 0) {
+        const newQtyTotal = pos.qty + (newNominal / newPrice);
+        const newAvg = (pos.modal + newNominal) / newQtyTotal;
+        document.getElementById('resAvg').innerText = "$" + fmt(newAvg);
+        if (pos.avg > 0) {
+            const diff = ((newAvg - pos.avg) / pos.avg * 100);
+            document.getElementById('resDiff').innerText = `${diff < 0 ? 'Penurunan' : 'Kenaikan'} Avg: ${Math.abs(diff).toFixed(2)}%`;
+            document.getElementById('resDiff').style.color = diff < 0 ? 'var(--gain)' : 'var(--loss)';
+        }
+    }
+}
+
+/* ---------- CHART ---------- */
 function initChart() {
     const ctx = document.getElementById('performanceChart'); if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
     let labels = [], points = [], tempQty = 0, tempModal = 0;
     (data[currentTab] || []).forEach(d => {
         if (d.tipe === 'BUY') { tempQty += d.qty; tempModal += d.nominal; }
-        else { 
-            const avg = tempModal / tempQty;
-            tempModal -= avg * Math.abs(d.qty);
-            tempQty -= Math.abs(d.qty);
-        }
-        labels.push(d.tanggal); points.push(tempModal);
+        else { const avg = tempQty > 0 ? tempModal / tempQty : 0; tempModal -= avg * Math.abs(d.qty); tempQty -= Math.abs(d.qty); }
+        labels.push(d.tanggal); points.push(Math.max(0, tempModal));
     });
-    chartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Investasi', data: points, borderColor: assets.find(a=>a.id===currentTab).color, fill: true, backgroundColor: 'rgba(0,0,0,0.03)', tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+    const color = assets.find(a => a.id === currentTab).color;
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Investasi', data: points, borderColor: color, borderWidth: 2.5, fill: true, backgroundColor: color + '18', tension: 0.35, pointRadius: 3, pointBackgroundColor: color }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#eef1f8' } }, x: { grid: { display: false } } } }
+    });
 }
 
+/* ---------- PRICES ---------- */
 function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 async function fetchPrices() {
     try {
         const ids = assets.map(a => a.geckoId).join(',');
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
         const json = await res.json();
-
-        assets.forEach(a => {
-            if (json[a.geckoId]) {
-                livePrices[a.id] = json[a.geckoId].usd;
-            }
-        });
-
+        assets.forEach(a => { if (json[a.geckoId]) livePrices[a.id] = json[a.geckoId].usd; });
         isApiOnline = true;
-        const ind = document.getElementById('liveStatus');
-        if (ind) ind.classList.remove('offline');
-
-        render();
+        const ind = document.getElementById('liveStatus'); if (ind) ind.classList.remove('offline');
+        if (currentUser) render();
     } catch (e) {
         isApiOnline = false;
-        const ind = document.getElementById('liveStatus');
-        if (ind) ind.classList.add('offline');
+        const ind = document.getElementById('liveStatus'); if (ind) ind.classList.add('offline');
     }
 }
 function togglePrivacy() { privacy = !privacy; render(); }
 
-(async () => {
-  await fetchPrices();
-  setInterval(fetchPrices, 60000);
-})();
+/* ---------- SHARE IMAGE ---------- */
+function generateShareImage() {
+    if (currentTab === "SUMMARY") return alert("Pilih koin spesifik.");
+    const asset = assets.find(a => a.id === currentTab);
+    const canvas = document.getElementById("shareCanvas"), ctx = canvas.getContext("2d");
+    const pos = calcPosition(data[currentTab] || []);
+    const lp = livePrices[currentTab] || 0;
+    let p, pct, label, footerTitle, footerValue;
+    if (pos.qty > 1e-8) {
+        p = (pos.qty * lp) - pos.modal; pct = pos.modal > 0 ? (p / pos.modal * 100) : 0;
+        label = p >= 0 ? "PROFIT" : "LOSS"; footerTitle = "AVG BUY"; footerValue = "$" + fmt(pos.avg);
+    } else {
+        p = pos.realizedPL; pct = pos.totalInvested > 0 ? (p / pos.totalInvested * 100) : 0;
+        label = p >= 0 ? "FINAL PROFIT" : "FINAL LOSS"; footerTitle = "TOTAL P/L"; footerValue = (p >= 0 ? "+" : "") + "$" + fmt(p);
+    }
+    const isP = p >= 0;
+    const draw = (img = null) => {
+        ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, 800, 450);
+        ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} ${pos.qty > 0 ? 'Performance' : 'Closed Position'}`, 50, 70);
+        ctx.fillStyle = "#64748b"; ctx.font = "500 18px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
+        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 120px Inter"; ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
+        ctx.font = "bold 24px Inter"; ctx.fillText(label, 50, 310);
+        ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
+        ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText(footerTitle, 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("STATUS", 550, 385);
+        ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText(footerValue, 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(pos.qty > 0 ? "HOLDING" : "SOLD OUT", 550, 420);
+        ctx.textAlign = "right";
+        if (img) { ctx.drawImage(img, 650, 40, 100, 100); } else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 750, 110); }
+        ctx.textAlign = "left"; ctx.fillStyle = asset.color; ctx.fillRect(0, 445, 800, 5);
+        const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
+    };
+    const logoImg = new Image(); logoImg.crossOrigin = "anonymous"; logoImg.onload = () => draw(logoImg); logoImg.onerror = () => draw(); logoImg.src = asset.logo;
+}
+
+/* ---------- EXPORT ---------- */
+function exportCSV() {
+    if (currentTab === "SUMMARY") return alert("Pilih koin spesifik untuk ekspor.");
+    const pos = calcPosition(data[currentTab] || []);
+    const lp = livePrices[currentTab] || 0;
+    const pnl = (pos.qty * lp) - pos.modal;
+    let csv = "sep=;\n";
+    csv += `RIWAYAT TRANSAKSI ASSET: ${currentTab}\n`;
+    csv += `Tipe;Tanggal;Harga Asset ($);Nominal Investasi ($);Quantity Didapat\n`;
+    (data[currentTab] || []).forEach(d => { csv += `${d.tipe};${d.tanggal};${d.harga.toFixed(2)};${d.nominal.toFixed(2)};${d.qty.toFixed(8)}\n`; });
+    csv += "\n\nRINGKASAN POSISI AKHIR\nKeterangan;Nilai\n";
+    csv += `Total Holding Quantity;${pos.qty.toFixed(8)}\n`;
+    csv += `Average Buy Price;${pos.avg.toFixed(2)}\n`;
+    csv += `Total Net Investment (Modal);${pos.modal.toFixed(2)}\n`;
+    csv += `Current Market Value;${(pos.qty * lp).toFixed(2)}\n`;
+    csv += `Floating Profit/Loss ($);${pnl.toFixed(2)}\n`;
+    csv += `Profit/Loss (%);${(pos.modal > 0 ? (pnl / pos.modal * 100) : 0).toFixed(2)}%\n`;
+    const blob = new Blob(["﻿" + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url); link.setAttribute('download', `DCA_History_${currentTab}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+}
+
+/* ---------- INIT ---------- */
+(async () => { await fetchPrices(); setInterval(fetchPrices, 60000); })();
 </script>
 </body>
 </html>
