@@ -582,13 +582,23 @@ function generateShareImage() {
     const draw = (img = null) => {
         const W = 800, H = 450, footerY = 388, leftW = 470, padX = 48;
         ctx.textBaseline = "alphabetic"; sp("0px");
-        // base + panels
-        ctx.fillStyle = "#0b1020"; ctx.fillRect(0, 0, W, H);
-        const lg = ctx.createLinearGradient(0, 0, leftW, footerY);
-        lg.addColorStop(0, '#161d36'); lg.addColorStop(1, '#0c1020');
-        ctx.fillStyle = lg; ctx.fillRect(0, 0, leftW, footerY);
-        ctx.fillStyle = "#090d18"; ctx.fillRect(leftW, 0, W - leftW, footerY);
-        ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1;
+        // background — Midnight gradient + ambient glows
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+        const bgg = ctx.createLinearGradient(0, 0, W, H);
+        bgg.addColorStop(0, '#141a35'); bgg.addColorStop(1, '#262a5e');
+        ctx.fillStyle = bgg; ctx.fillRect(0, 0, W, H);
+        const glow = (cx, cy, r, col) => {
+            const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        };
+        glow(W - 90, 20, 300, 'rgba(74,91,255,0.40)');
+        glow(300, 430, 240, 'rgba(201,162,255,0.18)');
+        // right panel — translucent (not solid black)
+        const rp = ctx.createLinearGradient(0, 0, 0, footerY);
+        rp.addColorStop(0, 'rgba(20,16,48,0.42)'); rp.addColorStop(1, 'rgba(20,16,48,0.24)');
+        ctx.fillStyle = rp; ctx.fillRect(leftW, 0, W - leftW, footerY);
+        ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(leftW + .5, 0); ctx.lineTo(leftW + .5, footerY); ctx.stroke();
         // accent stripe (green profit / red loss)
         const ag = ctx.createLinearGradient(0, 0, 0, footerY);
@@ -598,7 +608,7 @@ function generateShareImage() {
         ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "800 33px Inter";
         ctx.fillText(asset.name, padX, 74);
         ctx.fillText(pos.qty > 0 ? 'Performance' : 'Closed Position', padX, 110);
-        ctx.fillStyle = "#7f88a8"; ctx.font = "600 16px Inter";
+        ctx.fillStyle = "rgba(255,255,255,0.6)"; ctx.font = "600 16px Inter";
         ctx.fillText("DCA Tracker Pro · Snapshot", padX, 140);
         // big % (auto-fit)
         const bigTxt = (isP ? "+" : "") + pct.toFixed(2) + "%";
@@ -609,18 +619,27 @@ function generateShareImage() {
         // tag (dot + label)
         ctx.fillStyle = pnlCol; ctx.beginPath(); ctx.arc(padX + 7, 300, 7, 0, TAU); ctx.fill();
         ctx.font = "800 20px Inter"; sp("3px"); ctx.fillText(label, padX + 24, 307); sp("0px");
-        // right: round logo top-right + ring glow
+        // right: round logo top-right — soft glow + coin rim + highlight/shade
         const lr = 39, lcx = W - 44 - lr, lcy = 44 + lr;
-        ctx.globalAlpha = 0.18; ctx.fillStyle = tokenCol;
-        ctx.beginPath(); ctx.arc(lcx, lcy, lr + 7, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
-        if (img) {
-            ctx.save(); ctx.beginPath(); ctx.arc(lcx, lcy, lr, 0, TAU); ctx.clip();
-            ctx.drawImage(img, lcx - lr, lcy - lr, lr * 2, lr * 2); ctx.restore();
-        } else {
-            ctx.fillStyle = tokenCol; ctx.beginPath(); ctx.arc(lcx, lcy, lr, 0, TAU); ctx.fill();
+        const glowRing = ctx.createRadialGradient(lcx, lcy, lr, lcx, lcy, lr + 9);
+        glowRing.addColorStop(0, tokenCol + '55'); glowRing.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = glowRing; ctx.beginPath(); ctx.arc(lcx, lcy, lr + 9, 0, TAU); ctx.fill();
+        ctx.save(); ctx.beginPath(); ctx.arc(lcx, lcy, lr, 0, TAU); ctx.clip();
+        if (img) { ctx.drawImage(img, lcx - lr, lcy - lr, lr * 2, lr * 2); }
+        else {
+            ctx.fillStyle = tokenCol; ctx.fillRect(lcx - lr, lcy - lr, lr * 2, lr * 2);
             ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "800 28px Inter";
             ctx.fillText(asset.id, lcx, lcy + 10); ctx.textAlign = "left";
         }
+        const hi = ctx.createLinearGradient(lcx, lcy - lr, lcx, lcy);
+        hi.addColorStop(0, 'rgba(255,255,255,0.18)'); hi.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = hi; ctx.fillRect(lcx - lr, lcy - lr, lr * 2, lr);
+        const sh = ctx.createLinearGradient(lcx, lcy, lcx, lcy + lr);
+        sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.26)');
+        ctx.fillStyle = sh; ctx.fillRect(lcx - lr, lcy, lr * 2, lr);
+        ctx.restore();
+        ctx.strokeStyle = "rgba(255,255,255,0.40)"; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(lcx, lcy, lr - 1.1, 0, TAU); ctx.stroke();
         // right: stat rows
         const sx = leftW + 44;
         const rows = [[footerTitle, footerValue, "#ffffff"],
@@ -628,14 +647,14 @@ function generateShareImage() {
                       ["STATUS", pos.qty > 0 ? "HOLDING" : "SOLD OUT", statusCol]];
         let ry = 228;
         rows.forEach(r => {
-            ctx.fillStyle = "#6b7495"; ctx.font = "800 13px Inter"; sp("1.5px");
+            ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.font = "800 13px Inter"; sp("1.5px");
             ctx.fillText(r[0], sx, ry); sp("0px");
             ctx.fillStyle = r[2]; ctx.font = "800 28px Inter"; ctx.fillText(r[1], sx, ry + 30);
             ry += 60;
         });
-        // footer (Aurora style)
-        ctx.fillStyle = "#0a0e1a"; ctx.fillRect(0, footerY, W, H - footerY);
-        ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
+        // footer — translucent band (not solid black)
+        ctx.fillStyle = "rgba(14,10,36,0.38)"; ctx.fillRect(0, footerY, W, H - footerY);
+        ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(0, footerY + .5); ctx.lineTo(W, footerY + .5); ctx.stroke();
         const bg = ctx.createLinearGradient(padX, 405, padX + 28, 433);
         bg.addColorStop(0, '#5566ff'); bg.addColorStop(1, '#9a4bff');
@@ -643,7 +662,7 @@ function generateShareImage() {
         ctx.textAlign = "center"; ctx.font = "16px Inter"; ctx.fillText("🚀", padX + 14, 426);
         ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "800 18px Inter";
         ctx.fillText("DCA Tracker Pro", padX + 40, 428);
-        ctx.textAlign = "right"; ctx.fillStyle = "#8b93b4"; ctx.font = "700 17px Inter";
+        ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.font = "700 17px Inter";
         ctx.fillText("nabungcrypto.vercel.app", W - 44, 428); ctx.textAlign = "left";
         const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
     };
