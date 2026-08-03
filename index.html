@@ -568,21 +568,93 @@ function generateShareImage() {
         label = p >= 0 ? "FINAL PROFIT" : "FINAL LOSS"; footerTitle = "TOTAL P/L"; footerValue = (p >= 0 ? "+" : "") + "$" + fmt(p);
     }
     const isP = p >= 0;
+    const TAU = Math.PI * 2;
+    const tokenCol = asset.color;
+    // STATUS text uses a brighter tone for dim token colors (logo stays original)
+    const statusCol = ({ ETH: '#8AA0FF', PAXG: '#E8C33D' })[asset.id] || asset.color;
+    const pnlCol = isP ? '#22d39a' : '#f2555a', accB = isP ? '#12805a' : '#93262d';
+    const sp = (v) => { try { ctx.letterSpacing = v; } catch (e) {} };
+    const roundRect = (x, y, w, h, r) => {
+        ctx.beginPath(); ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    };
     const draw = (img = null) => {
-        ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, 800, 450);
-        ctx.fillStyle = "white"; ctx.font = "bold 32px Inter"; ctx.fillText(`${asset.name} ${pos.qty > 0 ? 'Performance' : 'Closed Position'}`, 50, 70);
-        ctx.fillStyle = "#64748b"; ctx.font = "500 18px Inter"; ctx.fillText("DCA Tracker Pro • Snapshot", 50, 105);
-        ctx.fillStyle = isP ? "#10b981" : "#ef4444"; ctx.font = "bold 120px Inter"; ctx.fillText((isP ? "+" : "") + pct.toFixed(2) + "%", 45, 260);
-        ctx.font = "bold 24px Inter"; ctx.fillText(label, 50, 310);
-        ctx.strokeStyle = "#334155"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
-        ctx.fillStyle = "#94a3b8"; ctx.font = "700 14px Inter"; ctx.fillText(footerTitle, 50, 385); ctx.fillText("LAST PRICE", 300, 385); ctx.fillText("STATUS", 550, 385);
-        ctx.fillStyle = "white"; ctx.font = "bold 28px Inter"; ctx.fillText(footerValue, 50, 420); ctx.fillText("$" + fmt(lp), 300, 420); ctx.fillText(pos.qty > 0 ? "HOLDING" : "SOLD OUT", 550, 420);
-        ctx.textAlign = "right";
-        if (img) { ctx.drawImage(img, 650, 40, 100, 100); } else { ctx.fillStyle = asset.color; ctx.font = "bold 80px Inter"; ctx.fillText(currentTab, 750, 110); }
-        ctx.textAlign = "left"; ctx.fillStyle = asset.color; ctx.fillRect(0, 445, 800, 5);
+        const W = 800, H = 450, footerY = 388, leftW = 470, padX = 48;
+        ctx.textBaseline = "alphabetic"; sp("0px");
+        // base + panels
+        ctx.fillStyle = "#0b1020"; ctx.fillRect(0, 0, W, H);
+        const lg = ctx.createLinearGradient(0, 0, leftW, footerY);
+        lg.addColorStop(0, '#161d36'); lg.addColorStop(1, '#0c1020');
+        ctx.fillStyle = lg; ctx.fillRect(0, 0, leftW, footerY);
+        ctx.fillStyle = "#090d18"; ctx.fillRect(leftW, 0, W - leftW, footerY);
+        ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(leftW + .5, 0); ctx.lineTo(leftW + .5, footerY); ctx.stroke();
+        // accent stripe (green profit / red loss)
+        const ag = ctx.createLinearGradient(0, 0, 0, footerY);
+        ag.addColorStop(0, pnlCol); ag.addColorStop(1, accB);
+        ctx.fillStyle = ag; ctx.fillRect(0, 0, 8, footerY);
+        // title (two lines) + subtitle
+        ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "800 33px Inter";
+        ctx.fillText(asset.name, padX, 74);
+        ctx.fillText(pos.qty > 0 ? 'Performance' : 'Closed Position', padX, 110);
+        ctx.fillStyle = "#7f88a8"; ctx.font = "600 16px Inter";
+        ctx.fillText("DCA Tracker Pro · Snapshot", padX, 140);
+        // big % (auto-fit)
+        const bigTxt = (isP ? "+" : "") + pct.toFixed(2) + "%";
+        let fs = 104; ctx.font = `800 ${fs}px Inter`;
+        const maxW = leftW - padX - 22;
+        while (ctx.measureText(bigTxt).width > maxW && fs > 58) { fs -= 2; ctx.font = `800 ${fs}px Inter`; }
+        ctx.fillStyle = pnlCol; ctx.fillText(bigTxt, padX - 3, 258);
+        // tag (dot + label)
+        ctx.fillStyle = pnlCol; ctx.beginPath(); ctx.arc(padX + 7, 300, 7, 0, TAU); ctx.fill();
+        ctx.font = "800 20px Inter"; sp("3px"); ctx.fillText(label, padX + 24, 307); sp("0px");
+        // right: round logo top-right + ring glow
+        const lr = 39, lcx = W - 44 - lr, lcy = 44 + lr;
+        ctx.globalAlpha = 0.18; ctx.fillStyle = tokenCol;
+        ctx.beginPath(); ctx.arc(lcx, lcy, lr + 7, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+        if (img) {
+            ctx.save(); ctx.beginPath(); ctx.arc(lcx, lcy, lr, 0, TAU); ctx.clip();
+            ctx.drawImage(img, lcx - lr, lcy - lr, lr * 2, lr * 2); ctx.restore();
+        } else {
+            ctx.fillStyle = tokenCol; ctx.beginPath(); ctx.arc(lcx, lcy, lr, 0, TAU); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "800 28px Inter";
+            ctx.fillText(asset.id, lcx, lcy + 10); ctx.textAlign = "left";
+        }
+        // right: stat rows
+        const sx = leftW + 44;
+        const rows = [[footerTitle, footerValue, "#ffffff"],
+                      ["LAST PRICE", "$" + fmt(lp), "#ffffff"],
+                      ["STATUS", pos.qty > 0 ? "HOLDING" : "SOLD OUT", statusCol]];
+        let ry = 228;
+        rows.forEach(r => {
+            ctx.fillStyle = "#6b7495"; ctx.font = "800 13px Inter"; sp("1.5px");
+            ctx.fillText(r[0], sx, ry); sp("0px");
+            ctx.fillStyle = r[2]; ctx.font = "800 28px Inter"; ctx.fillText(r[1], sx, ry + 30);
+            ry += 60;
+        });
+        // footer (Aurora style)
+        ctx.fillStyle = "#0a0e1a"; ctx.fillRect(0, footerY, W, H - footerY);
+        ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, footerY + .5); ctx.lineTo(W, footerY + .5); ctx.stroke();
+        const bg = ctx.createLinearGradient(padX, 405, padX + 28, 433);
+        bg.addColorStop(0, '#5566ff'); bg.addColorStop(1, '#9a4bff');
+        roundRect(padX, 405, 28, 28, 8); ctx.fillStyle = bg; ctx.fill();
+        ctx.textAlign = "center"; ctx.font = "16px Inter"; ctx.fillText("🚀", padX + 14, 426);
+        ctx.textAlign = "left"; ctx.fillStyle = "#ffffff"; ctx.font = "800 18px Inter";
+        ctx.fillText("DCA Tracker Pro", padX + 40, 428);
+        ctx.textAlign = "right"; ctx.fillStyle = "#8b93b4"; ctx.font = "700 17px Inter";
+        ctx.fillText("nabungcrypto.vercel.app", W - 44, 428); ctx.textAlign = "left";
         const link = document.createElement('a'); link.download = `PNL_${currentTab}.png`; link.href = canvas.toDataURL(); link.click();
     };
-    const logoImg = new Image(); logoImg.crossOrigin = "anonymous"; logoImg.onload = () => draw(logoImg); logoImg.onerror = () => draw(); logoImg.src = asset.logo;
+    // ensure Inter is loaded before drawing so the canvas matches the site font (not a fallback)
+    const fontsReady = (document.fonts && document.fonts.load)
+        ? Promise.all(['400 16px Inter', '600 16px Inter', '800 16px Inter'].map(f => document.fonts.load(f))).catch(() => {})
+        : Promise.resolve();
+    fontsReady.then(() => {
+        const logoImg = new Image(); logoImg.crossOrigin = "anonymous";
+        logoImg.onload = () => draw(logoImg); logoImg.onerror = () => draw(); logoImg.src = asset.logo;
+    });
 }
 
 /* ---------- EXPORT ---------- */
